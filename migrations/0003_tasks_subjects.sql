@@ -62,3 +62,4 @@ create policy "tasks_select_owner" on public.tasks for select to authenticated u
 create policy "tasks_insert_owner" on public.tasks for insert to authenticated with check (private.is_studyos_owner() and auth.user_id() = user_id);
 create policy "tasks_update_owner" on public.tasks for update to authenticated using (private.is_studyos_owner() and auth.user_id() = user_id) with check (private.is_studyos_owner() and auth.user_id() = user_id);
 create policy "tasks_delete_owner" on public.tasks for delete to authenticated using (private.is_studyos_owner() and auth.user_id() = user_id);
+notify pgrst, 'reload schema';
