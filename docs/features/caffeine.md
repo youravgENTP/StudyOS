@@ -7,9 +7,11 @@ summary: Records caffeine intake and estimates a time-varying body load from abs
 
 # Caffeine
 
-Caffeine records a source, dose, start time, and drinking duration. The default quick action represents one 1 fl oz espresso shot as 63.6 mg, based on USDA FoodData Central-derived data, and distributes intake uniformly over 60 minutes. The amount remains editable because preparation and cafe measurements vary substantially.
+Caffeine records a source, dose, start time, and intake or absorption duration. The built-in iced Americano preset represents one 1 fl oz espresso shot as 63.6 mg, based on USDA FoodData Central-derived data, and distributes intake uniformly over 60 minutes. The built-in 50 mg and 100 mg tablet presets use a 45-minute absorption window. Preparation, products, and individual response vary, so users can create, edit, and delete their own persisted presets.
 
 Each intake uses a one-compartment approximation with first-order elimination. During the drinking window, a constant input rate and elimination occur simultaneously; after drinking ends, the remaining amount decays exponentially. Multiple intakes are summed independently. The default adult half-life is 5 hours, within the roughly 3–7 hour range reported for healthy adults.
+
+The chart uses a rolling 24-hour window: eight hours of history and sixteen hours of projection. The observed-time portion is solid and the future estimate is dashed. A dynamic milligram axis, current value, projected peak, intake annotations, and the next 11 PM bedtime estimate make the chart and summary cards refer to the same calculation and time horizon. After 11 PM, the bedtime card explicitly says tomorrow rather than presenting an ambiguous zero.
 
 The 40 mg horizontal line is an evidence reference, not a medical threshold or measured plasma concentration. Reviews report improvements in alertness, vigilance, attention, and reaction time from low doses around 40 mg or 0.5 mg/kg, and a randomized double-blind study found performance effects at 40 mg. Individual response varies with tolerance, body size, genetics, smoking, medications, and health.
 
