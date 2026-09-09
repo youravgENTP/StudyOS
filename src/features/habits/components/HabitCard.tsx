@@ -285,33 +285,41 @@ export function HabitCard({
 
         <div className="habit-card-controls">
           {scheduledToday && (
-            <label className="habit-today-toggle">
-              <input
-                type="checkbox"
-                checked={completeToday}
-                onChange={event =>
-                  void setHabitComplete(
-                    habit.id,
-                    todayKey,
-                    event.target.checked,
-                  )
-                }
-              />
-
-              <span>Today</span>
-            </label>
+            <button
+              type="button"
+              className={`habit-complete-button${completeToday ? ' complete' : ''}`}
+              style={
+                completeToday
+                  ? {
+                      background: habit.color,
+                      borderColor: habit.color,
+                    }
+                  : undefined
+              }
+              onClick={() =>
+                void setHabitComplete(
+                  habit.id,
+                  todayKey,
+                  !completeToday,
+                )
+              }
+              aria-label={
+                completeToday
+                  ? `Mark ${habit.name} incomplete for today`
+                  : `Mark ${habit.name} complete for today`
+              }
+            >
+              ✓
+            </button>
           )}
 
           <button
             className="text-button"
-            onClick={() =>
-              setEditing(true)
-            }
+            onClick={() => setEditing(true)}
           >
             Edit
           </button>
         </div>
-      </div>
 
       <HabitHeatmap
         habit={habit}
