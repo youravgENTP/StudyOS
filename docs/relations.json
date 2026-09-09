@@ -7,7 +7,9 @@
     {"id":"neon-backend","type":"service","title":"Neon Backend","summary":"Groups the Auth, Data API, and RLS-backed Postgres boundary.","doc":"services/neon-backend.md","position":{"x":580,"y":20}},
     {"id":"neon-auth","type":"service","title":"Neon Auth","summary":"Owns real user sessions and provides authenticated JWTs.","doc":"services/neon-auth.md","position":{"x":580,"y":170}},
     {"id":"neon-data-api","type":"service","title":"Neon Data API","summary":"Carries authenticated PostgREST-compatible queries to Postgres.","doc":"services/neon-data-api.md","position":{"x":870,"y":170}},
-    {"id":"study-sessions","type":"database","title":"study_sessions","summary":"Durable timed and manually added study intervals protected by owner-only RLS.","doc":"database/initial-model.md","position":{"x":1160,"y":170}},
+    {"id":"study-sessions","type":"database","title":"study_sessions","summary":"Durable timed and manually added study intervals protected by owner-only RLS.","doc":"database/initial-model.md","position":{"x":1160,"y":80}},
+    {"id":"subjects-table","type":"database","title":"subjects","summary":"User-managed academic subjects that retain historical references when archived.","doc":"database/initial-model.md","position":{"x":1160,"y":250}},
+    {"id":"tasks-table","type":"database","title":"tasks","summary":"Categorized work items with optional due dates, completion state, and Study subjects.","doc":"database/initial-model.md","position":{"x":1160,"y":420}},
     {"id":"vercel-deployment","type":"service","title":"Vercel Deployment","summary":"Hosts the StudyOS PWA over HTTPS for Mac and iPhone access.","doc":"services/vercel-deployment.md","position":{"x":0,"y":-100}}
   ],
   "edges": [
@@ -19,6 +21,10 @@
     {"id":"backend-auth","from":"neon-backend","to":"neon-auth","label":"provides","summary":"Managed Better Auth is the identity service within the Neon backend."},
     {"id":"timer-data-api","from":"study-timer","to":"neon-data-api","label":"will write","summary":"Once the study-session slice exists, completed and manual intervals will use the authenticated Data API boundary."},
     {"id":"data-api-sessions","from":"neon-data-api","to":"study-sessions","label":"RLS query","summary":"Data API access to study sessions is restricted by PostgreSQL ownership policies."},
+    {"id":"tasks-data-api","from":"tasks","to":"neon-data-api","label":"CRUD","summary":"Tasks and subject management use the authenticated Data API client."},
+    {"id":"data-api-subjects","from":"neon-data-api","to":"subjects-table","label":"RLS query","summary":"Subject access is restricted to the sole authenticated owner."},
+    {"id":"data-api-tasks","from":"neon-data-api","to":"tasks-table","label":"RLS query","summary":"Task access is restricted to the sole authenticated owner."},
+    {"id":"tasks-subject","from":"tasks-table","to":"subjects-table","label":"optional Study subject","summary":"Only Study tasks may reference a subject; archived subjects remain attached to existing tasks."},
     {"id":"vercel-shell","from":"vercel-deployment","to":"application-shell","label":"hosts","summary":"Vercel serves the built StudyOS PWA over a stable HTTPS origin."}
   ]
 }

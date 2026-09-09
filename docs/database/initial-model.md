@@ -14,8 +14,8 @@ Future policies must explicitly protect `SELECT`, `INSERT`, `UPDATE`, and `DELET
 | Table | Purpose | Important relationships |
 | --- | --- | --- |
 | `study_sessions` | Implemented: completed timed or manual intervals | No subject foreign key by design; owner-only RLS |
-| `subjects` | User-managed academic subjects | Archived; referenced by eligible tasks/events |
-| `tasks` | General work items | Nullable `subject_id`; explicit category |
+| `subjects` | Implemented: user-managed academic subjects | Archived; referenced by Study tasks |
+| `tasks` | Implemented: general work items | Nullable `subject_id`; explicit category and completion timestamp |
 | `events` | Calendar events and major deadlines | `is_major` drives D-Day presentation |
 | `habit_definitions` / `habit_completions` | Recurrence and daily evidence | One completion per habit/date |
 | `routine_templates` / `routine_template_items` | Weekday operating protocols | Source for daily snapshots |
@@ -23,4 +23,4 @@ Future policies must explicitly protect `SELECT`, `INSERT`, `UPDATE`, and `DELET
 | `caffeine_intakes` | Timestamped intake events | Remaining caffeine is derived |
 | `user_settings` | Cross-feature preferences | One row per user |
 
-Only `study_sessions` is currently implemented. Migration 0001 creates the table and four CRUD policies; migration 0002 binds those policies to the sole account stored in a non-API `private` schema. Exact recurrence, routine snapshot mechanics, settings storage, and all other table-specific policies wait for their implementation slices.
+`study_sessions`, `subjects`, and `tasks` are implemented. Migration 0001 creates study sessions, migration 0002 binds policies to the sole account stored in a non-API `private` schema, and migration 0003 creates tasks and subjects with owner-only CRUD policies. Exact recurrence, routine snapshot mechanics, settings storage, and all other table-specific policies wait for their implementation slices.
