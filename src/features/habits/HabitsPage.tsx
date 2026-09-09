@@ -20,30 +20,6 @@ function iso(date: Date) {
   return date.toLocaleDateString('en-CA')
 }
 
-function mondayIndex(date: Date) {
-  const day = date.getDay()
-  return day === 0 ? 6 : day - 1
-}
-
-function completionRange() {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-
-  const monday = new Date(today)
-  monday.setDate(
-    today.getDate() - mondayIndex(today),
-  )
-
-  const start = new Date(monday)
-  start.setDate(
-    monday.getDate() - 16 * 7,
-  )
-
-  return {
-    from: iso(start),
-    to: iso(today),
-  }
-}
 
 export function HabitsPage() {
   const [habits, setHabits] =
@@ -67,30 +43,30 @@ export function HabitsPage() {
     try {
       const nextHabits = await listHabits()
 
-    let nextCompletions: HabitCompletion[] = []
+      let nextCompletions: HabitCompletion[] = []
 
-    if (nextHabits.length > 0) {
-    const earliestCreated = new Date(
-        Math.min(
-        ...nextHabits.map(habit =>
-            new Date(habit.createdAt).getTime(),
-        ),
-        ),
-    )
+      if (nextHabits.length > 0) {
+        const earliestCreated = new Date(
+          Math.min(
+            ...nextHabits.map(habit =>
+              new Date(habit.createdAt).getTime(),
+            ),
+          ),
+        )
 
-    const start = new Date(
-        earliestCreated.getFullYear(),
-        earliestCreated.getMonth(),
-        1,
-    )
+        const start = new Date(
+          earliestCreated.getFullYear(),
+          earliestCreated.getMonth(),
+          1,
+        )
 
-    const today = new Date()
+        const today = new Date()
 
-    nextCompletions = await listCompletions(
-        iso(start),
-        iso(today),
-    )
-    }
+        nextCompletions = await listCompletions(
+          iso(start),
+          iso(today),
+        )
+      }
 
       setHabits(nextHabits)
       setCompletions(nextCompletions)
