@@ -3,9 +3,6 @@ import type {
   HabitCompletion,
 } from '../types'
 
-const DAY_MS = 86_400_000
-const WEEK_COUNT = 17
-
 function iso(date: Date) {
   return date.toLocaleDateString('en-CA')
 }
@@ -15,7 +12,23 @@ function mondayIndex(date: Date) {
   return day === 0 ? 6 : day - 1
 }
 
-function buildWeeks() {
+function buildWeeks(createdAt: string) {
+  const created = new Date(createdAt)
+
+  const monthStart = new Date(
+    created.getFullYear(),
+    created.getMonth(),
+    1,
+  )
+
+  monthStart.setHours(0, 0, 0, 0)
+
+  const firstMonday = new Date(monthStart)
+  firstMonday.setDate(
+    monthStart.getDate() -
+      mondayIndex(monthStart),
+  )
+
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
@@ -24,24 +37,30 @@ function buildWeeks() {
     today.getDate() - mondayIndex(today),
   )
 
-  const firstMonday = new Date(currentMonday)
-  firstMonday.setDate(
-    currentMonday.getDate() -
-      (WEEK_COUNT - 1) * 7,
-  )
+  const weekCount =
+    Math.floor(
+      (currentMonday.getTime() -
+        firstMonday.getTime()) /
+        (7 * 86_400_000),
+    ) + 1
 
   return Array.from(
-    { length: WEEK_COUNT },
+    { length: weekCount },
     (_, weekIndex) =>
-      Array.from({ length: 7 }, (_, dayIndex) => {
-        const date = new Date(firstMonday)
-        date.setDate(
-          firstMonday.getDate() +
-            weekIndex * 7 +
-            dayIndex,
-        )
-        return date
-      }),
+      Array.from(
+        { length: 7 },
+        (_, dayIndex) => {
+          const date = new Date(firstMonday)
+
+          date.setDate(
+            firstMonday.getDate() +
+              weekIndex * 7 +
+              dayIndex,
+          )
+
+          return date
+        },
+      ),
   )
 }
 
@@ -75,7 +94,7 @@ export function HabitHeatmap({
   habit: Habit
   completions: HabitCompletion[]
 }) {
-  const weeks = buildWeeks()
+  const weeks = buildWeeks(habit.createdAt)
 
   const completed = new Set(
     completions

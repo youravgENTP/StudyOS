@@ -65,18 +65,32 @@ export function HabitsPage() {
 
   const load = useCallback(async () => {
     try {
-      const range = completionRange()
+      const nextHabits = await listHabits()
 
-      const [
-        nextHabits,
-        nextCompletions,
-      ] = await Promise.all([
-        listHabits(),
-        listCompletions(
-          range.from,
-          range.to,
+    let nextCompletions: HabitCompletion[] = []
+
+    if (nextHabits.length > 0) {
+    const earliestCreated = new Date(
+        Math.min(
+        ...nextHabits.map(habit =>
+            new Date(habit.createdAt).getTime(),
         ),
-      ])
+        ),
+    )
+
+    const start = new Date(
+        earliestCreated.getFullYear(),
+        earliestCreated.getMonth(),
+        1,
+    )
+
+    const today = new Date()
+
+    nextCompletions = await listCompletions(
+        iso(start),
+        iso(today),
+    )
+    }
 
       setHabits(nextHabits)
       setCompletions(nextCompletions)
