@@ -1,0 +1,1 @@
+.routine-editor-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(320px,.65fr);gap:16px;align-items:start}.routine-editor-grid .routine-content{max-width:none}.routine-editor-grid .routine-form{position:sticky;top:36px;margin:0}@media(max-width:850px){.routine-editor-grid{grid-template-columns:1fr}.routine-editor-grid .routine-form{position:static;grid-row:1}}
