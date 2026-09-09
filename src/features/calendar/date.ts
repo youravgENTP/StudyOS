@@ -43,8 +43,12 @@ export function sameDate(
 }
 
 export function formatMonth(date: Date) {
-  return new Intl.DateTimeFormat('en', {
+  return new Intl.DateTimeFormat('ko-KR', {
     month: 'long',
     year: 'numeric',
   }).format(date)
 }
+
+export function startOfCalendarMonth(date:Date){const first=new Date(date.getFullYear(),date.getMonth(),1);first.setDate(first.getDate()-first.getDay());return first}
+
+export function addMonths(date:Date,amount:number){return new Date(date.getFullYear(),date.getMonth()+amount,1)}

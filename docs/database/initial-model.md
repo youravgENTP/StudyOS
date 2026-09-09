@@ -16,11 +16,11 @@ Future policies must explicitly protect `SELECT`, `INSERT`, `UPDATE`, and `DELET
 | `study_sessions` | Implemented: completed timed or manual intervals | No subject foreign key by design; owner-only RLS |
 | `subjects` | Implemented: user-managed academic subjects | Archived; referenced by Study tasks |
 | `tasks` | Implemented: general work items | Nullable `subject_id`; explicit category and completion timestamp |
-| `events` | Calendar events and major deadlines | `is_major` drives D-Day presentation |
+| `events` | Implemented: timed or all-day calendar events | `is_major` drives D-Day presentation; optional Study subject |
 | `habit_definitions` / `habit_completions` | Implemented: weekday recurrence and daily evidence | One completion per habit/date |
 | `routine_templates` / `routine_template_items` | Implemented: weekday operating protocols | Source for daily snapshots |
 | `routine_instances` / `routine_instance_items` | Implemented: historically stable daily routine | Items are copied, not live references |
 | `caffeine_intakes` | Timestamped intake events | Remaining caffeine is derived |
 | `user_settings` | Cross-feature preferences | One row per user |
 
-`study_sessions`, Tasks/Subjects, Routine, and Habits are implemented. Migration 0001 creates study sessions, migration 0002 binds policies to the sole account stored in a non-API `private` schema, migration 0003 creates tasks and subjects, migration 0004 creates weekday routine templates plus durable daily snapshots, and migration 0005 creates habit definitions and daily completions. Settings storage and all other table-specific policies wait for their implementation slices.
+`study_sessions`, Tasks/Subjects, Routine, Habits, and Calendar Events are implemented. Migration 0001 creates study sessions, migration 0002 binds policies to the sole account stored in a non-API `private` schema, migration 0003 creates tasks and subjects, migration 0004 creates weekday routine templates plus durable daily snapshots, migration 0005 creates habit definitions and daily completions, migration 0006 adds task D-Day presentation, and migration 0007 creates events. Settings storage and all other table-specific policies wait for their implementation slices.

@@ -6,6 +6,7 @@
     {"id":"tasks","type":"feature","title":"Tasks & Subjects","summary":"General tasks with optional subjects for Study planning.","doc":"features/tasks.md","position":{"x":290,"y":340}},
     {"id":"routine","type":"feature","title":"Daily Routine","summary":"Weekday operating templates copied into historically stable daily instances.","doc":"features/routine.md","position":{"x":290,"y":510}},
     {"id":"habits","type":"feature","title":"Habits","summary":"Recurring behaviors with daily evidence and a contribution-style consistency view.","doc":"features/habits.md","position":{"x":290,"y":680}},
+    {"id":"calendar","type":"feature","title":"Calendar","summary":"Full-screen monthly planning for Events and due-dated Tasks.","doc":"features/calendar.md","position":{"x":290,"y":850}},
     {"id":"neon-backend","type":"service","title":"Neon Backend","summary":"Groups the Auth, Data API, and RLS-backed Postgres boundary.","doc":"services/neon-backend.md","position":{"x":580,"y":20}},
     {"id":"neon-auth","type":"service","title":"Neon Auth","summary":"Owns real user sessions and provides authenticated JWTs.","doc":"services/neon-auth.md","position":{"x":580,"y":170}},
     {"id":"neon-data-api","type":"service","title":"Neon Data API","summary":"Carries authenticated PostgREST-compatible queries to Postgres.","doc":"services/neon-data-api.md","position":{"x":870,"y":170}},
@@ -14,12 +15,15 @@
     {"id":"tasks-table","type":"database","title":"tasks","summary":"Categorized work items with optional due dates, completion state, and Study subjects.","doc":"database/initial-model.md","position":{"x":1160,"y":420}},
     {"id":"routine-tables","type":"database","title":"routine templates & instances","summary":"Weekday definitions and copied daily completion records protected by RLS.","doc":"database/initial-model.md","position":{"x":1160,"y":590}},
     {"id":"habit-tables","type":"database","title":"habit definitions & completions","summary":"Recurring behavior definitions and one completion record per date.","doc":"database/initial-model.md","position":{"x":1160,"y":760}},
+    {"id":"events-table","type":"database","title":"events","summary":"Timed and all-day calendar records with optional Study subjects.","doc":"database/initial-model.md","position":{"x":1160,"y":930}},
     {"id":"vercel-deployment","type":"service","title":"Vercel Deployment","summary":"Hosts the StudyOS PWA over HTTPS for Mac and iPhone access.","doc":"services/vercel-deployment.md","position":{"x":0,"y":-100}}
   ],
   "edges": [
     {"id":"shell-dashboard","from":"application-shell","to":"dashboard","label":"renders","summary":"The shell gives the Dashboard its route and responsive frame."},
+    {"id":"shell-calendar","from":"application-shell","to":"calendar","label":"renders","summary":"The shell gives Calendar a route while Calendar uses the full remaining viewport."},
     {"id":"dashboard-timer","from":"dashboard","to":"study-timer","label":"projects","summary":"The Dashboard surfaces timer state and its frequent actions."},
     {"id":"dashboard-tasks","from":"dashboard","to":"tasks","label":"projects","summary":"The Dashboard shows a compact view of today's feature-owned tasks."},
+    {"id":"calendar-tasks","from":"calendar","to":"tasks","label":"projects and creates","summary":"Calendar displays due-dated tasks and can create or edit them without duplicating task records."},
     {"id":"dashboard-routine","from":"dashboard","to":"routine","label":"projects","summary":"The Dashboard shows completion progress from today's routine instance."},
     {"id":"dashboard-habits","from":"dashboard","to":"habits","label":"projects","summary":"The Dashboard shows today's scheduled habit completion count."},
     {"id":"shell-auth","from":"application-shell","to":"neon-auth","label":"observes session","summary":"The root Auth provider makes the current Neon session available to application UI."},
@@ -35,6 +39,8 @@
     {"id":"data-api-routines","from":"neon-data-api","to":"routine-tables","label":"RLS query","summary":"Routine records are available only to the configured owner."},
     {"id":"habits-data-api","from":"habits","to":"neon-data-api","label":"CRUD","summary":"Habit definitions and daily check-offs use authenticated Data API operations."},
     {"id":"data-api-habits","from":"neon-data-api","to":"habit-tables","label":"RLS query","summary":"Habit records are available only to the configured owner."},
+    {"id":"calendar-data-api","from":"calendar","to":"neon-data-api","label":"CRUD","summary":"Calendar event operations use the authenticated Data API boundary."},
+    {"id":"data-api-events","from":"neon-data-api","to":"events-table","label":"RLS query","summary":"Event records are available only to the configured owner."},
     {"id":"vercel-shell","from":"vercel-deployment","to":"application-shell","label":"hosts","summary":"Vercel serves the built StudyOS PWA over a stable HTTPS origin."}
   ]
 }
