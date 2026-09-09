@@ -20,7 +20,7 @@ Future policies must explicitly protect `SELECT`, `INSERT`, `UPDATE`, and `DELET
 | `habit_definitions` / `habit_completions` | Implemented: weekday recurrence and daily evidence | One completion per habit/date |
 | `routine_templates` / `routine_template_items` | Implemented: weekday operating protocols | Source for daily snapshots |
 | `routine_instances` / `routine_instance_items` | Implemented: historically stable daily routine | Items are copied, not live references |
-| `caffeine_intakes` | Timestamped intake events | Remaining caffeine is derived |
+| `caffeine_intakes` | Implemented: timestamped dose and drinking-duration records | Remaining caffeine is derived, never stored |
 | `user_settings` | Cross-feature preferences | One row per user |
 
-`study_sessions`, Tasks/Subjects, Routine, Habits, and Calendar Events are implemented. Migration 0001 creates study sessions, migration 0002 binds policies to the sole account stored in a non-API `private` schema, migration 0003 creates tasks and subjects, migration 0004 creates weekday routine templates plus durable daily snapshots, migration 0005 creates habit definitions and daily completions, migration 0006 adds task D-Day presentation, and migration 0007 creates events. Settings storage and all other table-specific policies wait for their implementation slices.
+`study_sessions`, Tasks/Subjects, Routine, Habits, Calendar Events, and Caffeine are implemented. Migration 0001 creates study sessions, migration 0002 binds policies to the sole account stored in a non-API `private` schema, migration 0003 creates tasks and subjects, migration 0004 creates weekday routine templates plus durable daily snapshots, migration 0005 creates habit definitions and daily completions, migration 0006 adds task D-Day presentation, migration 0007 creates events, and migration 0008 creates caffeine intakes. Settings storage and all other table-specific policies wait for their implementation slices.
