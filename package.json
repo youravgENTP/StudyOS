@@ -14,7 +14,7 @@
   "dependencies": {
     "@neon/config": "^1.3.2",
     "@neon/env": "^1.2.3",
-    "@supabase/supabase-js": "^2.116.0",
+    "@neondatabase/neon-js": "^0.7.0-beta",
     "lucide-react": "^1.43.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
