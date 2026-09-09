@@ -320,6 +320,7 @@ export function HabitCard({
             Edit
           </button>
         </div>
+      </div>
 
       <HabitHeatmap
         habit={habit}
