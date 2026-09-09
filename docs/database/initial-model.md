@@ -23,4 +23,4 @@ Future policies must explicitly protect `SELECT`, `INSERT`, `UPDATE`, and `DELET
 | `caffeine_intakes` | Timestamped intake events | Remaining caffeine is derived |
 | `user_settings` | Cross-feature preferences | One row per user |
 
-Only `study_sessions` is currently implemented, in `migrations/0001_study_sessions.sql`, with explicit owner-only policies for all four CRUD operations. Exact recurrence, routine snapshot mechanics, settings storage, and all other table-specific policies wait for their implementation slices.
+Only `study_sessions` is currently implemented. Migration 0001 creates the table and four CRUD policies; migration 0002 binds those policies to the sole account stored in a non-API `private` schema. Exact recurrence, routine snapshot mechanics, settings storage, and all other table-specific policies wait for their implementation slices.
