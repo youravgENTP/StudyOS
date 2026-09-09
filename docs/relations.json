@@ -6,7 +6,7 @@
     {"id":"tasks","type":"feature","title":"Tasks & Subjects","summary":"General tasks with optional subjects for Study planning.","doc":"features/tasks.md","position":{"x":290,"y":340}},
     {"id":"routine","type":"feature","title":"Daily Routine","summary":"Weekday operating templates copied into historically stable daily instances.","doc":"features/routine.md","position":{"x":290,"y":510}},
     {"id":"habits","type":"feature","title":"Habits","summary":"Recurring behaviors with daily evidence and a contribution-style consistency view.","doc":"features/habits.md","position":{"x":290,"y":680}},
-    {"id":"calendar","type":"feature","title":"Calendar","summary":"Full-screen monthly planning for Events and due-dated Tasks.","doc":"features/calendar.md","position":{"x":290,"y":850}},
+    {"id":"calendar","type":"feature","title":"Calendar","summary":"Full-screen ten-week planning for Events and due-dated Tasks.","doc":"features/calendar.md","position":{"x":290,"y":850}},
     {"id":"neon-backend","type":"service","title":"Neon Backend","summary":"Groups the Auth, Data API, and RLS-backed Postgres boundary.","doc":"services/neon-backend.md","position":{"x":580,"y":20}},
     {"id":"neon-auth","type":"service","title":"Neon Auth","summary":"Owns real user sessions and provides authenticated JWTs.","doc":"services/neon-auth.md","position":{"x":580,"y":170}},
     {"id":"neon-data-api","type":"service","title":"Neon Data API","summary":"Carries authenticated PostgREST-compatible queries to Postgres.","doc":"services/neon-data-api.md","position":{"x":870,"y":170}},
