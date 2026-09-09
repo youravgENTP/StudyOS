@@ -1,0 +1,5 @@
+import{BarChart3,CalendarDays,CheckSquare2,Coffee,Gauge,ListChecks,Repeat2,Settings}from'lucide-react'
+import{NavLink,Outlet}from'react-router-dom'
+const nav=[['Dashboard','/',Gauge],['Calendar','/calendar',CalendarDays],['Tasks','/tasks',CheckSquare2],['Routine','/routine',ListChecks],['Habits','/habits',Repeat2],['Caffeine','/caffeine',Coffee],['Stats','/stats',BarChart3],['Settings','/settings',Settings]]as const
+function Navigation({items=nav}:{items?:readonly(typeof nav[number])[]}){return <>{items.map(([label,to,Icon])=><NavLink key={to} to={to} end={to==='/' } className={({isActive})=>`nav-link${isActive?' active':''}`}><Icon size={18}/><span>{label}</span></NavLink>)}</>}
+export function AppShell(){return <div className="shell"><aside className="sidebar"><div className="brand"><span className="brand-mark">S</span>StudyOS</div><nav className="nav"><Navigation/></nav></aside><main className="main"><Outlet/></main><nav className="mobile-nav"><Navigation items={nav.slice(0,5)}/></nav></div>}
