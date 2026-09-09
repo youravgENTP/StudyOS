@@ -1,4 +1,159 @@
-import{useEffect,useMemo,useState,type CSSProperties,type FormEvent}from'react';import{Coffee,Edit3,Plus,Pill,Trash2,X}from'lucide-react';import{createCaffeineIntake,deleteCaffeineIntake,deleteCaffeinePreset,saveCaffeinePreset}from'./api/caffeine';import{CaffeineChart}from'./components/CaffeineChart';import{DEFAULT_HALF_LIFE_HOURS,EFFECT_REFERENCE_MG,ESPRESSO_SHOT_MG,totalLoadAt}from'./model';import type{CaffeinePreset,CaffeinePresetInput}from'./types';import{useCaffeine}from'./useCaffeine';import'./caffeine.css';import'./presets.css'
-const builtIns:CaffeinePreset[]=[{id:'americano',name:'아아 1잔',caffeineMg:ESPRESSO_SHOT_MG,kind:'drink',durationMinutes:60,color:'#d99b43',builtIn:true},{id:'tablet-50',name:'카페인 50 mg',caffeineMg:50,kind:'tablet',durationMinutes:45,color:'#7fa7d8',builtIn:true},{id:'tablet-100',name:'카페인 100 mg',caffeineMg:100,kind:'tablet',durationMinutes:45,color:'#9b83cf',builtIn:true}];const localInput=(date:Date)=>new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16);const bedtimeAfter=(now:Date)=>{const result=new Date(now);result.setHours(23,0,0,0);if(result<=now)result.setDate(result.getDate()+1);return result}
-export function CaffeinePage(){const{intakes,presets,loading,error}=useCaffeine(),[now,setNow]=useState(new Date()),[intakeTime,setIntakeTime]=useState(()=>localInput(new Date())),[saving,setSaving]=useState(false),[formError,setFormError]=useState(''),[editor,setEditor]=useState<CaffeinePreset|null|undefined>(undefined);useEffect(()=>{const timer=window.setInterval(()=>setNow(new Date()),60000);return()=>window.clearInterval(timer)},[]);const bedtime=useMemo(()=>bedtimeAfter(now),[now]),current=totalLoadAt(intakes,now),bedtimeAmount=totalLoadAt(intakes,bedtime),bedtimeDay=bedtime.toLocaleDateString('en-CA')===now.toLocaleDateString('en-CA')?'오늘':'내일',allPresets=[...builtIns,...presets];async function take(preset:CaffeinePreset){const startedAt=new Date(intakeTime);if(!intakeTime||Number.isNaN(startedAt.getTime())){setFormError('섭취 시각을 선택해 주세요.');return}setSaving(true);setFormError('');try{await createCaffeineIntake({source:preset.name,caffeineMg:preset.caffeineMg,startedAt:startedAt.toISOString(),durationMinutes:preset.durationMinutes,note:preset.kind});setIntakeTime(localInput(new Date()))}catch(error){setFormError(error instanceof Error?error.message:'섭취를 기록하지 못했습니다.')}finally{setSaving(false)}}const todayKey=now.toLocaleDateString('en-CA'),todayIntakes=intakes.filter(i=>new Date(i.startedAt).toLocaleDateString('en-CA')===todayKey);return <div className="page caffeine-page"><div className="caffeine-heading"><div><div className="eyebrow">섭취와 감소 추정</div><h1 className="page-title">Caffeine</h1></div></div><div className="caffeine-metrics"><div><span>현재 추정량</span><strong className="tabular">{Math.round(current)} <small>mg</small></strong></div><div><span>{bedtimeDay} 오후 11시 예상</span><strong className="tabular">{Math.round(bedtimeAmount)} <small>mg</small></strong></div><div><span>효과 참고선</span><strong className="tabular">{EFFECT_REFERENCE_MG} <small>mg</small></strong></div></div><section className="caffeine-graph card"><div className="card-head"><div><h2>카페인 곡선</h2><span className="meta">과거 8시간 · 미래 16시간 · 반감기 {DEFAULT_HALF_LIFE_HOURS}시간</span></div></div>{loading?<p className="empty-copy">불러오는 중…</p>:<CaffeineChart intakes={intakes} now={now} bedtime={bedtime}/>} {error&&<p className="feature-error">{error}</p>}</section><div className="caffeine-lower"><section className="card preset-panel"><div className="card-head"><div><h2>섭취 추가</h2><span className="meta">프리셋을 누르면 바로 기록됩니다</span></div><label className="intake-time-control"><span>섭취 시각</span><input type="datetime-local" value={intakeTime} onChange={e=>setIntakeTime(e.target.value)}/></label></div><div className="preset-grid">{allPresets.map(preset=><div className="preset-card-wrap" key={preset.id}><button className="preset-card" disabled={saving} style={{'--preset-color':preset.color}as CSSProperties} onClick={()=>void take(preset)}>{preset.kind==='drink'?<Coffee/>:<Pill/>}<strong>{preset.name}</strong><span>{preset.caffeineMg} mg</span><small>{preset.kind==='drink'?`${preset.durationMinutes}분 섭취`:`${preset.durationMinutes}분 흡수`}</small></button>{!preset.builtIn&&<button className="preset-edit" onClick={()=>setEditor(preset)} aria-label={`${preset.name} 편집`}><Edit3 size={14}/></button>}</div>)}<button className="preset-card add-preset" onClick={()=>setEditor(null)}><Plus/><strong>새 프리셋</strong><span>직접 만들기</span></button></div>{formError&&<p className="form-error">{formError}</p>}</section><section className="card"><div className="card-head"><div><h2>오늘 섭취</h2><span className="meta">{todayIntakes.reduce((sum,i)=>sum+i.caffeineMg,0).toFixed(1)} mg</span></div></div><div className="intake-list">{todayIntakes.length?todayIntakes.map(intake=><div className="intake-row" key={intake.id}><span className="intake-time tabular">{new Intl.DateTimeFormat('ko',{hour:'2-digit',minute:'2-digit'}).format(new Date(intake.startedAt))}</span><div><strong>{intake.source}</strong><small>{intake.caffeineMg} mg · {intake.durationMinutes}분</small></div><button onClick={()=>void deleteCaffeineIntake(intake.id)} aria-label="삭제"><Trash2 size={16}/></button></div>):<p className="empty-copy">오늘 기록된 섭취가 없습니다.</p>}</div></section></div><p className="caffeine-disclaimer">혈중농도 측정값이나 의학적 효과 판정이 아닙니다. 섭취량과 평균 반감기로 계산한 추정 체내 잔존량입니다.</p>{editor!==undefined&&<PresetEditor preset={editor} onClose={()=>setEditor(undefined)}/>}</div>}
-function PresetEditor({preset,onClose}:{preset:CaffeinePreset|null;onClose:()=>void}){const[name,setName]=useState(preset?.name??''),[mg,setMg]=useState(String(preset?.caffeineMg??63.6)),[kind,setKind]=useState<'drink'|'tablet'>(preset?.kind??'drink'),[duration,setDuration]=useState(String(preset?.durationMinutes??60)),[color,setColor]=useState(preset?.color??'#d99b43'),[saving,setSaving]=useState(false),[error,setError]=useState('');async function submit(e:FormEvent){e.preventDefault();setSaving(true);try{const input:CaffeinePresetInput={name,caffeineMg:Number(mg),kind,durationMinutes:Number(duration),color};await saveCaffeinePreset(input,preset?.id);onClose()}catch(error){setError(error instanceof Error?error.message:'프리셋을 저장하지 못했습니다.')}finally{setSaving(false)}}async function remove(){if(!preset||!confirm(`“${preset.name}” 프리셋을 삭제할까요?`))return;await deleteCaffeinePreset(preset.id);onClose()}return <div className="preset-modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}><form className="preset-modal" onSubmit={submit}><button type="button" className="preset-close" onClick={onClose}><X/></button><h2>{preset?'프리셋 편집':'새 프리셋'}</h2><label>이름<input value={name} onChange={e=>setName(e.target.value)} required maxLength={80}/></label><label>카페인<input type="number" min="1" max="1000" step="0.1" value={mg} onChange={e=>setMg(e.target.value)} required/><span>mg</span></label><label>유형<select value={kind} onChange={e=>{const next=e.target.value as'drink'|'tablet';setKind(next);setDuration(next==='drink'?'60':'45')}}><option value="drink">음료</option><option value="tablet">태블릿</option></select></label><label>{kind==='drink'?'섭취 시간':'흡수 시간'}<input type="number" min="1" max="240" value={duration} onChange={e=>setDuration(e.target.value)} required/><span>분</span></label><label>색상<input type="color" value={color} onChange={e=>setColor(e.target.value)}/></label>{error&&<p className="form-error">{error}</p>}<div className="preset-modal-actions">{preset&&<button type="button" className="danger" onClick={()=>void remove()}>삭제</button>}<span/><button type="button" onClick={onClose}>취소</button><button className="primary" disabled={saving}>{saving?'저장 중…':'저장'}</button></div></form></div>}
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { Coffee, Edit3, Plus, Pill, Trash2, X } from 'lucide-react'
+import { createCaffeineIntake, deleteCaffeineIntake, deleteCaffeinePreset, saveCaffeinePreset } from './api/caffeine'
+import { CaffeineChart } from './components/CaffeineChart'
+import { ESPRESSO_SHOT_MG, totalLoadAt } from './model'
+import type { CaffeinePreset, CaffeinePresetInput } from './types'
+import { useCaffeine } from './useCaffeine'
+import { useCaffeineAxisFontSize } from '../settings/preferences'
+import './caffeine.css'
+import './presets.css'
+
+const builtIns: CaffeinePreset[] = [
+  { id: 'americano', name: '아아 1잔', caffeineMg: ESPRESSO_SHOT_MG, kind: 'drink', durationMinutes: 60, color: '#d99b43', builtIn: true },
+  { id: 'tablet-50', name: '카페인 50 mg', caffeineMg: 50, kind: 'tablet', durationMinutes: 45, color: '#7fa7d8', builtIn: true },
+  { id: 'tablet-100', name: '카페인 100 mg', caffeineMg: 100, kind: 'tablet', durationMinutes: 45, color: '#9b83cf', builtIn: true },
+]
+
+const localInput = (date: Date) => new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
+const bedtimeAfter = (now: Date) => {
+  const result = new Date(now)
+  result.setHours(23, 0, 0, 0)
+  if (result <= now) result.setDate(result.getDate() + 1)
+  return result
+}
+
+export function CaffeinePage() {
+  const { intakes, presets, loading, error } = useCaffeine()
+  const axisFontSize = useCaffeineAxisFontSize()
+  const [now, setNow] = useState(new Date())
+  const [intakeTime, setIntakeTime] = useState(() => localInput(new Date()))
+  const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState('')
+  const [editor, setEditor] = useState<CaffeinePreset | null | undefined>(undefined)
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 60_000)
+    return () => window.clearInterval(timer)
+  }, [])
+
+  const bedtime = useMemo(() => bedtimeAfter(now), [now])
+  const current = totalLoadAt(intakes, now)
+  const allPresets = [...builtIns, ...presets]
+
+  async function take(preset: CaffeinePreset) {
+    const startedAt = new Date(intakeTime)
+    if (!intakeTime || Number.isNaN(startedAt.getTime())) {
+      setFormError('Choose an intake time first.')
+      return
+    }
+    setSaving(true)
+    setFormError('')
+    try {
+      await createCaffeineIntake({ source: preset.name, caffeineMg: preset.caffeineMg, startedAt: startedAt.toISOString(), durationMinutes: preset.durationMinutes, note: preset.kind })
+      setIntakeTime(localInput(new Date()))
+    } catch (caught) {
+      setFormError(caught instanceof Error ? caught.message : 'Could not save the intake record.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const todayKey = now.toLocaleDateString('en-CA')
+  const todayIntakes = intakes.filter(intake => new Date(intake.startedAt).toLocaleDateString('en-CA') === todayKey)
+
+  return <div className="page caffeine-page">
+    <header className="caffeine-heading">
+      <div><div className="eyebrow">Intake and decay estimate</div><h1 className="page-title">Caffeine intake</h1></div>
+      <div className="current-caffeine"><strong className="tabular">{Math.round(current)}</strong><span>mg now</span></div>
+    </header>
+
+    <section className="caffeine-graph card">
+      <div className="card-head"><h2>Caffeine curve</h2></div>
+      {loading ? <p className="empty-copy">Loading…</p> : <CaffeineChart intakes={intakes} now={now} bedtime={bedtime} axisFontSize={axisFontSize} />}
+      {error && <p className="feature-error">{error}</p>}
+    </section>
+
+    <div className="caffeine-lower">
+      <section className="card preset-panel">
+        <div className="card-head">
+          <div><h2>Add Intake Record</h2><span className="meta">Tap a preset to record it immediately</span></div>
+          <label className="intake-time-control"><span>Intake time</span><input type="datetime-local" value={intakeTime} onChange={event => setIntakeTime(event.target.value)} /></label>
+        </div>
+        <div className="preset-grid">
+          {allPresets.map(preset => <div className="preset-card-wrap" key={preset.id}>
+            <button className="preset-card" disabled={saving} onClick={() => void take(preset)}>
+              {preset.kind === 'drink' ? <Coffee /> : <Pill />}
+              <strong>{preset.name}</strong>
+              <span>{preset.caffeineMg} mg · {preset.durationMinutes} min {preset.kind === 'drink' ? 'intake' : 'absorption'}</span>
+            </button>
+            {!preset.builtIn && <button className="preset-edit" onClick={() => setEditor(preset)} aria-label={`Edit ${preset.name}`}><Edit3 size={14} /></button>}
+          </div>)}
+          <button className="preset-card add-preset" onClick={() => setEditor(null)}><Plus /><strong>New preset</strong><span>Create a custom intake</span></button>
+        </div>
+        {formError && <p className="form-error">{formError}</p>}
+      </section>
+
+      <section className="card">
+        <div className="card-head"><div><h2>Intake Log</h2><span className="meta">Today · {todayIntakes.reduce((sum, intake) => sum + intake.caffeineMg, 0).toFixed(1)} mg</span></div></div>
+        <div className="intake-list">
+          {todayIntakes.length ? todayIntakes.map(intake => <div className="intake-row" key={intake.id}>
+            <span className="intake-time tabular">{new Intl.DateTimeFormat('ko', { hour: '2-digit', minute: '2-digit' }).format(new Date(intake.startedAt))}</span>
+            <div><strong>{intake.source}</strong><small>{intake.caffeineMg} mg · {intake.durationMinutes} min</small></div>
+            <button onClick={() => void deleteCaffeineIntake(intake.id)} aria-label="Delete intake"><Trash2 size={16} /></button>
+          </div>) : <p className="empty-copy">No intake records today.</p>}
+        </div>
+      </section>
+    </div>
+
+    <p className="caffeine-disclaimer">This is an estimated remaining body load based on intake and an average half-life, not a blood measurement or medical assessment.</p>
+    {editor !== undefined && <PresetEditor preset={editor} onClose={() => setEditor(undefined)} />}
+  </div>
+}
+
+function PresetEditor({ preset, onClose }: { preset: CaffeinePreset | null; onClose: () => void }) {
+  const [name, setName] = useState(preset?.name ?? '')
+  const [mg, setMg] = useState(String(preset?.caffeineMg ?? 63.6))
+  const [kind, setKind] = useState<'drink' | 'tablet'>(preset?.kind ?? 'drink')
+  const [duration, setDuration] = useState(String(preset?.durationMinutes ?? 60))
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  async function submit(event: FormEvent) {
+    event.preventDefault()
+    setSaving(true)
+    setError('')
+    try {
+      const input: CaffeinePresetInput = { name, caffeineMg: Number(mg), kind, durationMinutes: Number(duration), color: preset?.color ?? '#8a8f98' }
+      await saveCaffeinePreset(input, preset?.id)
+      onClose()
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Could not save this preset.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function remove() {
+    if (!preset || !confirm(`Delete “${preset.name}”?`)) return
+    try {
+      await deleteCaffeinePreset(preset.id)
+      onClose()
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Could not delete this preset.')
+    }
+  }
+
+  return <div className="preset-modal-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}>
+    <form className="preset-modal" onSubmit={submit}>
+      <button type="button" className="preset-close" onClick={onClose} aria-label="Close"><X /></button>
+      <h2>{preset ? 'Edit preset' : 'New preset'}</h2>
+      <label>Name<input value={name} onChange={event => setName(event.target.value)} required maxLength={80} /></label>
+      <label>Caffeine<input type="number" min="1" max="1000" step="0.1" value={mg} onChange={event => setMg(event.target.value)} required /><span>mg</span></label>
+      <label>Type<select value={kind} onChange={event => { const next = event.target.value as 'drink' | 'tablet'; setKind(next); setDuration(next === 'drink' ? '60' : '45') }}><option value="drink">Drink</option><option value="tablet">Tablet</option></select></label>
+      <label>{kind === 'drink' ? 'Intake time' : 'Absorption'}<input type="number" min="1" max="240" value={duration} onChange={event => setDuration(event.target.value)} required /><span>min</span></label>
+      {error && <p className="form-error">{error}</p>}
+      <div className="preset-modal-actions">{preset && <button type="button" className="danger" onClick={() => void remove()}>Delete</button>}<span /><button type="button" onClick={onClose}>Cancel</button><button className="primary" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button></div>
+    </form>
+  </div>
+}
