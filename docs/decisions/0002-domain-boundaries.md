@@ -2,4 +2,4 @@
 
 **Status:** Accepted
 
-Routine, Task, and Habit remain separate domains. Study sessions never reference subjects. D-Day is a presentation of major event data. Settings holds global behavior only; feature-owned content stays within its feature.
+Routine, Projects/Workstreams/Tasks, and Habits remain separate domains. Study sessions never reference subjects. Subjects are global master data optionally referenced by Workstreams and Study events. D-Day is presentation metadata supported by Projects, Workstreams, Tasks, and major Events. Settings holds global behavior only; feature-owned content stays within its feature.

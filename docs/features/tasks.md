@@ -1,14 +1,22 @@
 ---
 id: tasks
 type: feature
-title: Tasks and Subjects
-summary: Models general tasks while allowing Study tasks to reference a user-managed subject.
+title: Projects, Workstreams, and Tasks
+summary: Manages medium- and long-term work through a Project → optional Workstream → Task hierarchy.
 ---
 
-# Tasks and Subjects
+# Projects, Workstreams, and Tasks
 
-Tasks use the explicit categories Study, Personal, Errands, Development, and Other. A task has a title, optional due date, completion timestamp, and an optional subject only when its category is Study. The database enforces that non-Study tasks cannot retain a subject.
+Tasks is StudyOS's long-range project-management domain. Every Task belongs to a Project and may optionally belong to a Workstream. A Workstream belongs to one Project and may optionally reference a global Subject. Category (`study`, `personal`, `errands`, `development`, or `other`) is editable metadata on every level; it is never a hierarchy level. New children initially inherit their parent's category in the UI.
 
-The Tasks route owns task editing and subject management. It provides open/completed views and supports creating, editing, completing, and deleting tasks. Subjects can be created, renamed, recolored, and archived. Archiving removes a subject from future selection while preserving its name and color on historical tasks.
+Projects, Workstreams, and Tasks require a due date and may omit a start date. A null start date means deadline-only and renders as a diamond at the due date; no start date is invented. A start date cannot follow its due date. Children may intentionally extend beyond parent dates, so those relationships produce visible warnings instead of blocking writes or silently changing dates.
 
-`useTasks` reads both resources through the authenticated Neon Data API. Mutations emit one feature-local browser event so the Tasks route and Dashboard projection refresh from the same durable records without introducing a global store. Every query remains protected by owner-only RLS.
+All three levels use explicit `not_started`, `in_progress`, `done`, and `dropped` statuses. Marking an entity Done records `completed_at`; moving it to another status clears that timestamp. Parent state remains manual. Progress is derived from individual Tasks: Done Tasks divided by all non-Dropped Tasks. Project progress uses every direct and nested Task rather than averaging Workstreams. Zero eligible Tasks displays “No tasks yet.”
+
+The default route is a collapsed Portfolio Timeline of active Projects. Expansion state is device-local in `localStorage`. Bars contain titles and use progressively lighter visual weight down the hierarchy; deadline-only records use markers. A Project opens a detail route with a work-focused List and a shared Gantt-style Timeline. List ordering follows explicit `position` values, with accessible up/down controls for Workstreams and for Tasks within the same parent.
+
+Creation and editing use a contextual side drawer rather than a fixed composer. Creating under a Project or Workstream preselects that parent. D-Day may be pinned at any level and is projected onto the Dashboard.
+
+Subjects remain global, reusable, color-bearing master data. They can be created, edited, recolored, and archived. Only Workstreams optionally reference Subjects; unrelated Workstreams and direct Project Tasks need no Subject.
+
+The authenticated Neon Data API owns CRUD. Browser mutations emit one feature-local event so Portfolio, Project Detail, Calendar, and Dashboard reload the same durable rows. Owner-only RLS applies independently to Projects, Workstreams, Tasks, and Subjects.

@@ -1,156 +1,37 @@
-import {
-  useMemo,
-  useState,
-} from 'react'
+import { useState } from 'react'
+import { Plus, SlidersHorizontal } from 'lucide-react'
+import { EntityEditor } from './components/EntityEditor'
+import { PortfolioTimeline } from './components/PortfolioTimeline'
 import { SubjectManager } from './components/SubjectManager'
-import { TaskComposer } from './components/TaskComposer'
-import { TaskRow } from './components/TaskRow'
 import { useTasks } from './useTasks'
-import type {
-  Task,
-  TaskCategory,
-} from './types'
+import type { PlanningEntity } from './types'
 import './tasks.css'
 
+type Editor = { kind: 'project' | 'workstream' | 'task'; entity?: PlanningEntity } | null
+
 export function TasksPage() {
-  const {
-    tasks,
-    subjects,
-    loading,
-    error,
-  } = useTasks()
+  const { projects, workstreams, tasks, subjects, loading, error } = useTasks()
+  const [filter, setFilter] = useState<'active' | 'all'>('active')
+  const [editor, setEditor] = useState<Editor>(null)
+  const [subjectsOpen, setSubjectsOpen] = useState(false)
+  const visibleProjects = filter === 'active' ? projects.filter(project => project.status !== 'done' && project.status !== 'dropped') : projects
 
-  const [editing, setEditing] =
-    useState<Task | null>(null)
-
-  const [view, setView] =
-    useState<'open' | 'completed'>('open')
-
-  const [composerCategory, setComposerCategory] =
-    useState<TaskCategory>('study')
-
-  const visible = useMemo(
-    () =>
-      tasks.filter(task =>
-        view === 'completed'
-          ? Boolean(task.completedAt)
-          : !task.completedAt,
-      ),
-    [tasks, view],
-  )
-
-  const openCount =
-    tasks.filter(task => !task.completedAt).length
-
-  const showSubjects =
-    composerCategory === 'study'
-
-  return (
-    <div className="page tasks-page">
-      <div className="tasks-heading">
-        <div>
-          <div className="eyebrow">
-            Plan and complete
-          </div>
-
-          <h1 className="page-title">
-            Tasks
-          </h1>
-        </div>
-
-        <div className="task-count tabular">
-          {openCount} open
-        </div>
-      </div>
-
-      <div
-        className={`tasks-layout${
-          showSubjects ? '' : ' full-width'
-        }`}
-      >
-        <div className="tasks-main">
-          <section className="card">
-            <TaskComposer
-              subjects={subjects}
-              editing={editing}
-              onDone={() => setEditing(null)}
-              onCategoryChange={
-                setComposerCategory
-              }
-            />
-          </section>
-
-          <div className="task-tabs">
-            <button
-              className={
-                view === 'open'
-                  ? 'active'
-                  : ''
-              }
-              onClick={() => setView('open')}
-            >
-              Open
-            </button>
-
-            <button
-              className={
-                view === 'completed'
-                  ? 'active'
-                  : ''
-              }
-              onClick={() =>
-                setView('completed')
-              }
-            >
-              Completed
-            </button>
-          </div>
-
-          {error && (
-            <div className="feature-error">
-              {error}
-            </div>
-          )}
-
-          <section className="task-rows">
-            {loading ? (
-              <p className="empty-copy">
-                Loading tasks…
-              </p>
-            ) : visible.length ? (
-              visible.map(task => (
-                <TaskRow
-                  key={task.id}
-                  task={task}
-                  onEdit={setEditing}
-                />
-              ))
-            ) : (
-              <div className="empty-state">
-                <h2>
-                  {view === 'open'
-                    ? 'Nothing pending'
-                    : 'No completed tasks yet'}
-                </h2>
-
-                <p>
-                  {view === 'open'
-                    ? 'Your task list is clear.'
-                    : 'Completed work will collect here.'}
-                </p>
-              </div>
-            )}
-          </section>
-        </div>
-
-        {showSubjects && (
-          <aside>
-            <SubjectManager
-              subjects={subjects}
-            />
-          </aside>
-        )}
+  return <div className="page tasks-page">
+    <div className="tasks-heading">
+      <div><div className="eyebrow">Long-range planning</div><h1 className="page-title">Portfolio</h1></div>
+      <div className="tasks-toolbar">
+        <div className="portfolio-filter"><button className={filter === 'active' ? 'active' : ''} onClick={() => setFilter('active')}>Active</button><button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>All</button></div>
+        <button className="button" onClick={() => setSubjectsOpen(value => !value)}><SlidersHorizontal size={15} /> Subjects</button>
+        <button className="button primary" onClick={() => setEditor({ kind: 'project' })}><Plus size={16} /> Project</button>
       </div>
     </div>
-  )
+    {subjectsOpen && <div className="subjects-inline"><SubjectManager subjects={subjects} /></div>}
+    {error && <div className="feature-error">{error}</div>}
+    <section className="card portfolio-card">
+      {loading ? <p className="empty-copy">Loading portfolio…</p> : visibleProjects.length
+        ? <PortfolioTimeline projects={visibleProjects} workstreams={workstreams} tasks={tasks} onEdit={(kind, entity) => setEditor({ kind, entity })} />
+        : <div className="empty-state"><h2>No active projects</h2><p>Create a project to begin planning long-running work.</p></div>}
+    </section>
+    {editor && <EntityEditor kind={editor.kind} editing={editor.entity ?? null} projects={projects} workstreams={workstreams} subjects={subjects} onClose={() => setEditor(null)} />}
+  </div>
 }

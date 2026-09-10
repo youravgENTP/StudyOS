@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ChevronDown, ChevronUp, Plus } from 'lucide-react'
-import { listSubjects, listTasks, onTasksChanged } from '../tasks/api/tasks'
-import type { Subject, Task } from '../tasks/types'
+import { useNavigate } from 'react-router-dom'
+import { listProjects, listSubjects, listTasks, listWorkstreams, onTasksChanged } from '../tasks/api/tasks'
+import type { Project, Subject, Task, Workstream } from '../tasks/types'
 import { listEvents, onCalendarChanged } from './api/events'
 import { CalendarComposer } from './components/CalendarComposer'
 import { CalendarMonth } from './components/CalendarMonth'
@@ -18,6 +19,9 @@ const DAYS_VISIBLE = WEEKS_VISIBLE * 7
 const currentRangeStart = () => startOfWeekOn(new Date(), calendarPreferences.weekStartsOn)
 
 export function CalendarPage() {
+  const navigate = useNavigate()
+  const [projects, setProjects] = useState<Project[]>([])
+  const [workstreams, setWorkstreams] = useState<Workstream[]>([])
   const [rangeStart, setRangeStart] = useState(currentRangeStart)
   const [tasks, setTasks] = useState<Task[]>([])
   const [events, setEvents] = useState<CalendarEvent[]>([])
@@ -33,7 +37,9 @@ export function CalendarPage() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [nextTasks, nextEvents, nextSubjects] = await Promise.all([listTasks(), listEvents(rangeStartKey, rangeEndKey), listSubjects()])
+      const [nextProjects, nextWorkstreams, nextTasks, nextEvents, nextSubjects] = await Promise.all([listProjects(), listWorkstreams(), listTasks(), listEvents(rangeStartKey, rangeEndKey), listSubjects()])
+      setProjects(nextProjects)
+      setWorkstreams(nextWorkstreams)
       setTasks(nextTasks)
       setEvents(nextEvents)
       setSubjects(nextSubjects)
@@ -85,7 +91,7 @@ export function CalendarPage() {
     </header>
     {error && <div className="calendar-error">{error}</div>}
     <div className="weekday-header">{weekdayLabels.map(day => <span key={day}>{day}</span>)}</div>
-    {loading ? <div className="calendar-loading">달력을 불러오는 중…</div> : <CalendarMonth start={rangeStart} dayCount={DAYS_VISIBLE} tasks={tasks} events={events} onCreate={createAt} onSelect={select} />}
-    {composerDate && <CalendarComposer key={`${isoDate(composerDate)}-${editing?.kind ?? 'new'}-${editing?.value.id ?? ''}`} date={isoDate(composerDate)} subjects={subjects} editing={editing} onClose={close} />}
+    {loading ? <div className="calendar-loading">달력을 불러오는 중…</div> : <CalendarMonth start={rangeStart} dayCount={DAYS_VISIBLE} tasks={tasks} workstreams={workstreams} projects={projects} events={events} onCreate={createAt} onSelect={select} onSelectWorkstream={workstream => navigate(`/tasks/${workstream.projectId}`)} />}
+    {composerDate && <CalendarComposer key={`${isoDate(composerDate)}-${editing?.kind ?? 'new'}-${editing?.value.id ?? ''}`} date={isoDate(composerDate)} projects={projects} workstreams={workstreams} subjects={subjects} editing={editing} onClose={close} />}
   </div>
 }

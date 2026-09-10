@@ -1,219 +1,116 @@
 import { dataApi } from '../../../lib/neon/data'
-import type { Subject, Task, TaskInput } from '../types'
+import { completionPatch, validateProjectInput, validateTaskInput, validateWorkstreamInput } from '../model'
+import type { PlanningEntity, Project, ProjectInput, Subject, Task, TaskInput, TaskStatus, Workstream, WorkstreamInput } from '../types'
 
 const CHANGED = 'studyos:tasks-changed'
+export const notifyTasksChanged = () => window.dispatchEvent(new Event(CHANGED))
+export function onTasksChanged(listener: () => void) { window.addEventListener(CHANGED, listener); return () => window.removeEventListener(CHANGED, listener) }
 
-export function notifyTasksChanged() {
-  window.dispatchEvent(new Event(CHANGED))
-}
-
-export function onTasksChanged(listener: () => void) {
-  window.addEventListener(CHANGED, listener)
-  return () => window.removeEventListener(CHANGED, listener)
-}
-
-function failure(error: unknown) {
-  return new Error(
-    error &&
-      typeof error === 'object' &&
-      'message' in error
-      ? String(error.message)
-      : 'Unknown database error',
-  )
+function failure(operation: string, error: unknown) {
+  if (import.meta.env.DEV) console.error(`[tasks] ${operation}`, error)
+  return new Error('Could not save or load project data. Please try again.')
 }
 
 function mapSubject(row: Record<string, unknown>): Subject {
+  return { id: String(row.id), name: String(row.name), color: String(row.color), archivedAt: row.archived_at ? String(row.archived_at) : null }
+}
+
+function mapBase(row: Record<string, unknown>): PlanningEntity {
   return {
-    id: String(row.id),
-    name: String(row.name),
-    color: String(row.color),
-    archivedAt: row.archived_at ? String(row.archived_at) : null,
+    id: String(row.id), title: String(row.title), description: row.description ? String(row.description) : null,
+    category: row.category as PlanningEntity['category'], startDate: row.start_date ? String(row.start_date) : null,
+    dueDate: String(row.due_date), status: row.status as TaskStatus, isDday: Boolean(row.is_dday),
+    position: Number(row.position), completedAt: row.completed_at ? String(row.completed_at) : null, createdAt: String(row.created_at),
   }
 }
 
-function mapTask(row: Record<string, unknown>): Task {
-  const relation = Array.isArray(row.subjects)
-    ? row.subjects[0]
-    : row.subjects
-
+function values(input: ProjectInput | WorkstreamInput | TaskInput) {
+  const done = completionPatch(input.status)
   return {
-    id: String(row.id),
-    title: String(row.title),
-    category: row.category as Task['category'],
-    subjectId: row.subject_id ? String(row.subject_id) : null,
-    subject: relation
-      ? mapSubject(relation as Record<string, unknown>)
-      : null,
-    dueDate: row.due_date ? String(row.due_date) : null,
-    isDday: Boolean(row.is_dday),
-    completedAt: row.completed_at ? String(row.completed_at) : null,
-    createdAt: String(row.created_at),
+    title: input.title.trim(), description: input.description?.trim() || null, category: input.category,
+    start_date: input.startDate, due_date: input.dueDate, status: input.status, is_dday: input.isDday,
+    completed_at: done.completedAt,
   }
 }
 
-export async function listTasks() {
-  const { data, error } = await dataApi
-    .from('tasks')
-    .select(
-      'id,title,category,subject_id,due_date,is_dday,completed_at,created_at,subjects(id,name,color,archived_at)',
-    )
-    .order('completed_at', { ascending: true, nullsFirst: true })
-    .order('due_date', { ascending: true, nullsFirst: false })
-    .order('created_at', { ascending: false })
+async function nextPosition(table: 'projects' | 'workstreams' | 'tasks', filters: { column: 'project_id' | 'workstream_id'; value: string | null }[] = []) {
+  let query = dataApi.from(table).select('id', { count: 'exact', head: true })
+  for (const filter of filters) query = filter.value === null ? query.is(filter.column, null) : query.eq(filter.column, filter.value)
+  const { count, error } = await query
+  if (error) throw failure(`count ${table}`, error)
+  return count ?? 0
+}
 
-  if (error) throw failure(error)
+export async function listProjects(): Promise<Project[]> {
+  const { data, error } = await dataApi.from('projects').select('id,title,description,category,start_date,due_date,status,is_dday,position,completed_at,created_at').order('position')
+  if (error) throw failure('load projects', error)
+  return (data ?? []).map(row => mapBase(row as Record<string, unknown>))
+}
 
-  return (data ?? []).map(row =>
-    mapTask(row as Record<string, unknown>),
-  )
+export async function listWorkstreams(): Promise<Workstream[]> {
+  const { data, error } = await dataApi.from('workstreams').select('id,project_id,subject_id,title,description,category,start_date,due_date,status,is_dday,position,completed_at,created_at,subjects(id,name,color,archived_at)').order('position')
+  if (error) throw failure('load workstreams', error)
+  return (data ?? []).map(row => {
+    const record = row as Record<string, unknown>
+    const relation = Array.isArray(record.subjects) ? record.subjects[0] : record.subjects
+    return { ...mapBase(record), projectId: String(record.project_id), subjectId: record.subject_id ? String(record.subject_id) : null, subject: relation ? mapSubject(relation as Record<string, unknown>) : null }
+  })
+}
+
+export async function listTasks(): Promise<Task[]> {
+  const { data, error } = await dataApi.from('tasks').select('id,project_id,workstream_id,title,description,category,start_date,due_date,status,is_dday,position,completed_at,created_at').order('position')
+  if (error) throw failure('load tasks', error)
+  return (data ?? []).map(row => { const record = row as Record<string, unknown>; return { ...mapBase(record), projectId: String(record.project_id), workstreamId: record.workstream_id ? String(record.workstream_id) : null } })
 }
 
 export async function listSubjects(includeArchived = false) {
-  let query = dataApi
-    .from('subjects')
-    .select('id,name,color,archived_at')
-    .order('name')
-
-  if (!includeArchived) {
-    query = query.is('archived_at', null)
-  }
-
+  let query = dataApi.from('subjects').select('id,name,color,archived_at').order('name')
+  if (!includeArchived) query = query.is('archived_at', null)
   const { data, error } = await query
-
-  if (error) throw failure(error)
-
-  return (data ?? []).map(row =>
-    mapSubject(row as Record<string, unknown>),
-  )
+  if (error) throw failure('load subjects', error)
+  return (data ?? []).map(row => mapSubject(row as Record<string, unknown>))
 }
 
-export async function createSubject(name: string, color: string) {
-  const { error } = await dataApi
-    .from('subjects')
-    .insert({
-      name: name.trim(),
-      color,
-    })
+export async function createSubject(name: string, color: string) { const { error } = await dataApi.from('subjects').insert({ name: name.trim(), color }); if (error) throw failure('create subject', error); notifyTasksChanged() }
+export async function updateSubject(id: string, name: string, color: string) { const { error } = await dataApi.from('subjects').update({ name: name.trim(), color }).eq('id', id); if (error) throw failure('update subject', error); notifyTasksChanged() }
+export async function archiveSubject(id: string) { const { error } = await dataApi.from('subjects').update({ archived_at: new Date().toISOString() }).eq('id', id); if (error) throw failure('archive subject', error); notifyTasksChanged() }
 
-  if (error) throw failure(error)
-
-  notifyTasksChanged()
+export async function createProject(input: ProjectInput) {
+  const invalid = validateProjectInput(input); if (invalid) throw new Error(invalid)
+  const { error } = await dataApi.from('projects').insert({ ...values(input), position: await nextPosition('projects') })
+  if (error) throw failure('create project', error); notifyTasksChanged()
 }
+export async function updateProject(id: string, input: ProjectInput) { const invalid = validateProjectInput(input); if (invalid) throw new Error(invalid); const { error } = await dataApi.from('projects').update(values(input)).eq('id', id); if (error) throw failure('update project', error); notifyTasksChanged() }
+export async function deleteProject(id: string) { const { error } = await dataApi.from('projects').delete().eq('id', id); if (error) throw failure('delete project', error); notifyTasksChanged() }
 
-export async function updateSubject(
-  id: string,
-  name: string,
-  color: string,
-) {
-  const { error } = await dataApi
-    .from('subjects')
-    .update({
-      name: name.trim(),
-      color,
-    })
-    .eq('id', id)
-
-  if (error) throw error
-
-  notifyTasksChanged()
+export async function createWorkstream(input: WorkstreamInput) {
+  const invalid = validateWorkstreamInput(input); if (invalid) throw new Error(invalid)
+  const { error } = await dataApi.from('workstreams').insert({ ...values(input), project_id: input.projectId, subject_id: input.subjectId, position: await nextPosition('workstreams', [{ column: 'project_id', value: input.projectId }]) })
+  if (error) throw failure('create workstream', error); notifyTasksChanged()
 }
-
-export async function archiveSubject(id: string) {
-  const { error } = await dataApi
-    .from('subjects')
-    .update({
-      archived_at: new Date().toISOString(),
-    })
-    .eq('id', id)
-
-  if (error) throw error
-
-  notifyTasksChanged()
-}
+export async function updateWorkstream(id: string, input: WorkstreamInput) { const invalid = validateWorkstreamInput(input); if (invalid) throw new Error(invalid); const { error } = await dataApi.from('workstreams').update({ ...values(input), project_id: input.projectId, subject_id: input.subjectId }).eq('id', id); if (error) throw failure('update workstream', error); notifyTasksChanged() }
+export async function deleteWorkstream(id: string) { const { error } = await dataApi.from('workstreams').delete().eq('id', id); if (error) throw failure('delete workstream', error); notifyTasksChanged() }
 
 export async function createTask(input: TaskInput) {
-  const { error } = await dataApi
-    .from('tasks')
-    .insert({
-      title: input.title.trim(),
-      category: input.category,
-      subject_id:
-        input.category === 'study'
-          ? input.subjectId
-          : null,
-      due_date: input.dueDate,
-      is_dday: input.isDday,
-    })
-
-  if (error) throw error
-
-  notifyTasksChanged()
+  const invalid = validateTaskInput(input); if (invalid) throw new Error(invalid)
+  const filters = input.workstreamId
+    ? [{ column: 'workstream_id' as const, value: input.workstreamId }]
+    : [{ column: 'project_id' as const, value: input.projectId }, { column: 'workstream_id' as const, value: null }]
+  const { error } = await dataApi.from('tasks').insert({ ...values(input), project_id: input.projectId, workstream_id: input.workstreamId, position: await nextPosition('tasks', filters) })
+  if (error) throw failure('create task', error); notifyTasksChanged()
 }
+export async function updateTask(id: string, input: TaskInput) { const invalid = validateTaskInput(input); if (invalid) throw new Error(invalid); const { error } = await dataApi.from('tasks').update({ ...values(input), project_id: input.projectId, workstream_id: input.workstreamId }).eq('id', id); if (error) throw failure('update task', error); notifyTasksChanged() }
+export async function deleteTask(id: string) { const { error } = await dataApi.from('tasks').delete().eq('id', id); if (error) throw failure('delete task', error); notifyTasksChanged() }
 
-export async function updateTask(
-  id: string,
-  input: TaskInput,
-) {
-  const { error } = await dataApi
-    .from('tasks')
-    .update({
-      title: input.title.trim(),
-      category: input.category,
-      subject_id:
-        input.category === 'study'
-          ? input.subjectId
-          : null,
-      due_date: input.dueDate,
-      is_dday: input.isDday,
-    })
-    .eq('id', id)
+export async function setEntityStatus(table: 'projects' | 'workstreams' | 'tasks', id: string, status: TaskStatus) { const patch = completionPatch(status); const { error } = await dataApi.from(table).update({ status: patch.status, completed_at: patch.completedAt }).eq('id', id); if (error) throw failure('update status', error); notifyTasksChanged() }
+export async function setEntityDday(table: 'projects' | 'workstreams' | 'tasks', id: string, isDday: boolean) { const { error } = await dataApi.from(table).update({ is_dday: isDday }).eq('id', id); if (error) throw failure('update D-Day', error); notifyTasksChanged() }
+export async function setTaskCompleted(id: string, completed: boolean) { await setEntityStatus('tasks', id, completed ? 'done' : 'not_started') }
+export async function setTaskDday(id: string, isDday: boolean) { await setEntityDday('tasks', id, isDday) }
 
-  if (error) throw error
-
-  notifyTasksChanged()
-}
-
-export async function setTaskDday(
-  id: string,
-  isDday: boolean,
-) {
-  const { error } = await dataApi
-    .from('tasks')
-    .update({
-      is_dday: isDday,
-    })
-    .eq('id', id)
-
-  if (error) throw error
-
-  notifyTasksChanged()
-}
-
-export async function setTaskCompleted(
-  id: string,
-  completed: boolean,
-) {
-  const { error } = await dataApi
-    .from('tasks')
-    .update({
-      completed_at: completed
-        ? new Date().toISOString()
-        : null,
-    })
-    .eq('id', id)
-
-  if (error) throw error
-
-  notifyTasksChanged()
-}
-
-export async function deleteTask(id: string) {
-  const { error } = await dataApi
-    .from('tasks')
-    .delete()
-    .eq('id', id)
-
-  if (error) throw error
-
+export async function reorderEntities(table: 'projects' | 'workstreams' | 'tasks', items: PlanningEntity[], id: string, targetIndex: number) {
+  const from = items.findIndex(item => item.id === id); if (from < 0 || targetIndex < 0 || targetIndex >= items.length || from === targetIndex) return
+  const reordered = [...items]; const [moved] = reordered.splice(from, 1); reordered.splice(targetIndex, 0, moved)
+  const results = await Promise.all(reordered.map((item, position) => item.position === position ? Promise.resolve({ error: null }) : dataApi.from(table).update({ position }).eq('id', item.id)))
+  const failed = results.find(result => result.error); if (failed?.error) throw failure(`reorder ${table}`, failed.error)
   notifyTasksChanged()
 }

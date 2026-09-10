@@ -1,6 +1,13 @@
 .calendar-week-shift { display: grid; gap: 2px; }
 .calendar-controls .calendar-week-shift button { width: 36px; height: 17px; border-radius: 9px; }
 .calendar-controls .calendar-week-shift svg { width: 17px; height: 17px; stroke-width: 2.25; }
+.month-entry.workstream.spanning,.month-entry.task.spanning { border-radius: 0; background: color-mix(in srgb,var(--entry-color) 25%,transparent); }
+.month-entry.workstream.spanning { font-weight: 700; }
+.month-entry.spanning.span-start { border-radius: 4px 0 0 4px; }
+.month-entry.spanning.span-end { border-radius: 0 4px 4px 0; }
+.month-entry.spanning.span-start.span-end { border-radius: 4px; }
+.month-entry.deadline-only i { width: 8px; height: 8px; border-radius: 1px; transform: rotate(45deg); }
+.popover-description { width: 100%; min-height: 70px; padding: 8px; border: 0; border-radius: 6px; color: #fff; background: #3a3a3e; resize: vertical; }
 
 @media (max-width: 760px) {
   .calendar-controls .calendar-week-shift button { width: 32px; height: 15px; }

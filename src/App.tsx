@@ -8,6 +8,7 @@ import { RoutinePage } from './features/routine/RoutinePage'
 import { PlaceholderPage } from './features/shared/PlaceholderPage'
 import { SettingsPage } from './features/settings/SettingsPage'
 import { TasksPage } from './features/tasks/TasksPage'
+import { ProjectDetailPage } from './features/tasks/ProjectDetailPage'
 import './App.css'
 
 export default function App() {
@@ -18,6 +19,7 @@ export default function App() {
         <Route path="calendar" element={<CalendarPage />} />
         <Route path="caffeine" element={<CaffeinePage />} />
         <Route path="tasks" element={<TasksPage />} />
+        <Route path="tasks/:projectId" element={<ProjectDetailPage />} />
         <Route path="routine" element={<RoutinePage />} />
         <Route path="habits" element={<HabitsPage />} />
 

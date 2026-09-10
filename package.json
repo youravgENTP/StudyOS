@@ -9,7 +9,7 @@
     "dev:architecture": "npm --prefix architecture-viewer run dev",
     "build:architecture": "npm --prefix architecture-viewer run build",
     "lint": "oxlint",
-    "test": "tsc -p tsconfig.test.json && node --test src/features/caffeine/model.test.ts",
+    "test": "tsc -p tsconfig.test.json && node --test src/features/caffeine/model.test.ts src/features/tasks/model.test.ts",
     "typecheck": "tsc -b",
     "preview": "vite preview"
   },
