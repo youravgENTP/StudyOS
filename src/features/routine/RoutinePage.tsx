@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { deleteTemplateItem, getDailyRoutine, getTemplate, listTemplateItems, onRoutineChanged, reorderTemplateItem, saveTemplateItem, setRoutineItemCompleted } from './api/routine'
+import { deleteTemplateItem, getDailyRoutine, getTemplate, listTemplateItems, onRoutineChanged, reorderTemplateItem, reorderTodayRoutineItem, saveTemplateItem, setRoutineItemCompleted } from './api/routine'
 import { RoutineTimeline } from './components/RoutineTimeline'
 import { weekdays, type RoutineItem, type RoutineItemInput } from './types'
 import './routine.css'
@@ -68,17 +68,22 @@ export function RoutinePage() {
   }
 
   async function move(item: RoutineItem, direction: -1 | 1) {
-    const index = templateItems.findIndex(candidate => candidate.id === item.id)
-    try {
-      await reorderTemplateItem(templateItems, item.id, index + direction)
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : '루틴 순서를 변경하지 못했습니다.')
-    }
+    const index = items.findIndex(candidate => candidate.id === item.id)
+    await reorder(item, index + direction)
   }
 
   async function reorder(item: RoutineItem, targetIndex: number) {
     try {
-      await reorderTemplateItem(templateItems, item.id, targetIndex)
+      const templateItem = templateItemFor(item)
+      if (!templateItem) return
+      if (isToday) {
+        const targetTemplateItem = items[targetIndex] ? templateItemFor(items[targetIndex]) : null
+        if (!targetTemplateItem) return
+        const templateTargetIndex = templateItems.findIndex(candidate => candidate.id === targetTemplateItem.id)
+        await reorderTodayRoutineItem({ templateItems, templateItemId: templateItem.id, templateTargetIndex, instanceItems: items, instanceItemId: item.id, instanceTargetIndex: targetIndex })
+      } else {
+        await reorderTemplateItem(templateItems, templateItem.id, targetIndex)
+      }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '루틴 순서를 변경하지 못했습니다.')
     }
@@ -109,7 +114,7 @@ export function RoutinePage() {
             key={`${weekday}-${isToday ? 'today' : 'template'}`}
             items={items}
             today={isToday}
-            reorderable={!isToday}
+            reorderable
             templateItemFor={templateItemFor}
             onToggle={(item, value) => void toggle(item, value)}
             onSave={save}

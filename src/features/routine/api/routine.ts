@@ -62,7 +62,7 @@ export async function deleteTemplateItem(id: string) {
   notify()
 }
 
-export async function reorderTemplateItem(items: RoutineItem[], id: string, targetIndex: number) {
+async function reorderRows(table: 'routine_template_items' | 'routine_instance_items', items: RoutineItem[], id: string, targetIndex: number) {
   const index = items.findIndex(item => item.id === id)
   if (index < 0 || targetIndex < 0 || targetIndex >= items.length || index === targetIndex) return
   const reordered = [...items]
@@ -70,9 +70,28 @@ export async function reorderTemplateItem(items: RoutineItem[], id: string, targ
   reordered.splice(targetIndex, 0, moved)
   const results = await Promise.all(reordered.map((item, position) => item.position === position
     ? Promise.resolve({ error: null })
-    : dataApi.from('routine_template_items').update({ position }).eq('id', item.id)))
+    : dataApi.from(table).update({ position }).eq('id', item.id)))
   const failed = results.find(result => result.error)
   if (failed?.error) throw failure('reorder template items', '루틴 순서를 변경하지 못했습니다.', failed.error)
+}
+
+export async function reorderTemplateItem(items: RoutineItem[], id: string, targetIndex: number) {
+  await reorderRows('routine_template_items', items, id, targetIndex)
+  notify()
+}
+
+export async function reorderTodayRoutineItem({ templateItems, templateItemId, templateTargetIndex, instanceItems, instanceItemId, instanceTargetIndex }: {
+  templateItems: RoutineItem[]
+  templateItemId: string
+  templateTargetIndex: number
+  instanceItems: RoutineItem[]
+  instanceItemId: string
+  instanceTargetIndex: number
+}) {
+  await Promise.all([
+    reorderRows('routine_template_items', templateItems, templateItemId, templateTargetIndex),
+    reorderRows('routine_instance_items', instanceItems, instanceItemId, instanceTargetIndex),
+  ])
   notify()
 }
 

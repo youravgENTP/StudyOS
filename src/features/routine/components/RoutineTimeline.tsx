@@ -59,7 +59,7 @@ export function RoutineTimeline({ items, today, reorderable, templateItemFor, on
         return <article
           className={`routine-item${item.completedAt ? ' completed' : ''}${draggedId === item.id ? ' dragging' : ''}${overId === item.id && draggedId !== item.id ? ' drag-target' : ''}${editing ? ' editing' : ''}`}
           key={item.id}
-          onDragEnter={() => { if (draggedId && reorderable) setOverId(item.id) }}
+          onDragEnter={() => { if (draggedId && reorderable && templateItem) setOverId(item.id) }}
           onDragOver={event => { if (draggedId && reorderable) event.preventDefault() }}
           onDrop={drop}
         >
@@ -71,8 +71,8 @@ export function RoutineTimeline({ items, today, reorderable, templateItemFor, on
             ? <div className="routine-editor-slot"><RoutineItemForm key={templateItem.id} editing={templateItem} onSave={onSave} onCancel={() => setEditingRowId(null)} /></div>
             : <><div className="routine-copy"><strong>{item.title}</strong>{item.details && <p>{item.details}</p>}</div>{templateItem && <div className="routine-actions">
               {reorderable && <button className="drag-handle" draggable onDragStart={event => startDrag(event, item)} aria-label={`Drag to reorder ${item.title}`}><GripVertical size={16} /></button>}
-              {reorderable && <button disabled={index === 0} onClick={() => onMove(templateItem, -1)} aria-label="Move up"><ChevronUp size={15} /></button>}
-              {reorderable && <button disabled={index === items.length - 1} onClick={() => onMove(templateItem, 1)} aria-label="Move down"><ChevronDown size={15} /></button>}
+              {reorderable && <button disabled={index === 0} onClick={() => onMove(item, -1)} aria-label="Move up"><ChevronUp size={15} /></button>}
+              {reorderable && <button disabled={index === items.length - 1} onClick={() => onMove(item, 1)} aria-label="Move down"><ChevronDown size={15} /></button>}
               <button onClick={() => { setAdding(false); setEditingRowId(item.id) }} aria-label="Edit"><Pencil size={15} /></button>
               <button onClick={() => onDelete(templateItem)} aria-label="Delete"><Trash2 size={15} /></button>
             </div>}</>}
