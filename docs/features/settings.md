@@ -7,6 +7,6 @@ summary: Owns cross-feature display and behavior preferences.
 
 # Settings
 
-Settings owns preferences that change another feature without becoming feature content. The first implemented preference controls the Caffeine chart's horizontal- and vertical-axis label size from 12–20 px.
+Settings owns preferences that change another feature without becoming feature content. It controls the Caffeine chart's axis-label size from 12–20 px, an optional regular bedtime, and caffeine half-life from 2–10 hours. Bedtime is intentionally unset by default; half-life defaults to 5 hours.
 
-The value is stored in browser local storage and reacts immediately in an open app. It is device-local for now; server-backed `user_settings` remains a future persistence slice.
+These values are stored in browser local storage and react immediately in an open app. They are device-local for now; server-backed `user_settings` remains a future persistence slice.

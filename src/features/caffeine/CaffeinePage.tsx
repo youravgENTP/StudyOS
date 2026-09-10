@@ -1,31 +1,31 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Coffee, Edit3, Plus, Pill, Trash2, X } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { createCaffeineIntake, deleteCaffeineIntake, deleteCaffeinePreset, saveCaffeinePreset } from './api/caffeine'
 import { CaffeineChart } from './components/CaffeineChart'
-import { ESPRESSO_SHOT_MG, totalLoadAt } from './model'
+import { calculateRecommendedCutoff, DEFAULT_CUTOFF_BUFFER_HOURS, GENERIC_AMERICANO_MG, GENERIC_ESPRESSO_SHOT_MG, nextBedtimeAt, totalLoadAt } from './model'
 import type { CaffeinePreset, CaffeinePresetInput } from './types'
 import { useCaffeine } from './useCaffeine'
-import { useCaffeineAxisFontSize } from '../settings/preferences'
+import { useBedtime, useCaffeineAxisFontSize, useCaffeineHalfLifeHours } from '../settings/preferences'
 import './caffeine.css'
 import './presets.css'
 
 const builtIns: CaffeinePreset[] = [
-  { id: 'americano', name: '아아 1잔', caffeineMg: ESPRESSO_SHOT_MG, kind: 'drink', durationMinutes: 60, color: '#d99b43', builtIn: true },
+  { id: 'espresso', name: '에스프레소 1샷', caffeineMg: GENERIC_ESPRESSO_SHOT_MG, kind: 'drink', durationMinutes: 15, color: '#8a8f98', builtIn: true },
+  { id: 'americano', name: '아메리카노 1잔', caffeineMg: GENERIC_AMERICANO_MG, kind: 'drink', durationMinutes: 60, color: '#8a8f98', builtIn: true },
   { id: 'tablet-50', name: '카페인 50 mg', caffeineMg: 50, kind: 'tablet', durationMinutes: 45, color: '#7fa7d8', builtIn: true },
   { id: 'tablet-100', name: '카페인 100 mg', caffeineMg: 100, kind: 'tablet', durationMinutes: 45, color: '#9b83cf', builtIn: true },
 ]
 
 const localInput = (date: Date) => new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
-const bedtimeAfter = (now: Date) => {
-  const result = new Date(now)
-  result.setHours(23, 0, 0, 0)
-  if (result <= now) result.setDate(result.getDate() + 1)
-  return result
-}
+const clock = (date: Date) => new Intl.DateTimeFormat('en', { hour: '2-digit', minute: '2-digit', hour12: false }).format(date)
+const datedClock = (date: Date) => new Intl.DateTimeFormat('en', { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false }).format(date)
 
 export function CaffeinePage() {
   const { intakes, presets, loading, error } = useCaffeine()
   const axisFontSize = useCaffeineAxisFontSize()
+  const bedtimeSetting = useBedtime()
+  const halfLifeHours = useCaffeineHalfLifeHours()
   const [now, setNow] = useState(new Date())
   const [intakeTime, setIntakeTime] = useState(() => localInput(new Date()))
   const [saving, setSaving] = useState(false)
@@ -37,8 +37,9 @@ export function CaffeinePage() {
     return () => window.clearInterval(timer)
   }, [])
 
-  const bedtime = useMemo(() => bedtimeAfter(now), [now])
-  const current = totalLoadAt(intakes, now)
+  const bedtime = useMemo(() => bedtimeSetting ? nextBedtimeAt(now, bedtimeSetting) : null, [bedtimeSetting, now])
+  const cutoff = useMemo(() => bedtime ? calculateRecommendedCutoff({ bedtime, bufferHours: DEFAULT_CUTOFF_BUFFER_HOURS }) : null, [bedtime])
+  const current = totalLoadAt(intakes, now, halfLifeHours)
   const allPresets = [...builtIns, ...presets]
 
   async function take(preset: CaffeinePreset) {
@@ -68,9 +69,13 @@ export function CaffeinePage() {
       <div className="current-caffeine"><strong className="tabular">{Math.round(current)}</strong><span>mg now</span></div>
     </header>
 
+    <div className="caffeine-cutoff">
+      {bedtime && cutoff ? <><span>Recommended caffeine cutoff</span><strong className="tabular">{datedClock(cutoff)}</strong><small>Bedtime {clock(bedtime)} · {DEFAULT_CUTOFF_BUFFER_HOURS} h buffer</small></> : <><span>Recommended caffeine cutoff</span><Link to="/settings">Set a regular bedtime in Settings to enable guidance.</Link></>}
+    </div>
+
     <section className="caffeine-graph card">
       <div className="card-head"><h2>Caffeine curve</h2></div>
-      {loading ? <p className="empty-copy">Loading…</p> : <CaffeineChart intakes={intakes} now={now} bedtime={bedtime} axisFontSize={axisFontSize} />}
+      {loading ? <p className="empty-copy">Loading…</p> : <CaffeineChart intakes={intakes} now={now} bedtime={bedtime} axisFontSize={axisFontSize} halfLifeHours={halfLifeHours} />}
       {error && <p className="feature-error">{error}</p>}
     </section>
 
@@ -85,7 +90,7 @@ export function CaffeinePage() {
             <button className="preset-card" disabled={saving} onClick={() => void take(preset)}>
               {preset.kind === 'drink' ? <Coffee /> : <Pill />}
               <strong>{preset.name}</strong>
-              <span>{preset.caffeineMg} mg · {preset.durationMinutes} min {preset.kind === 'drink' ? 'intake' : 'absorption'}</span>
+              <span>{preset.id === 'americano' ? '2 shots · ' : ''}{preset.caffeineMg} mg · {preset.durationMinutes} min {preset.kind === 'drink' ? 'intake' : 'absorption'}</span>
             </button>
             {!preset.builtIn && <button className="preset-edit" onClick={() => setEditor(preset)} aria-label={`Edit ${preset.name}`}><Edit3 size={14} /></button>}
           </div>)}
@@ -113,7 +118,7 @@ export function CaffeinePage() {
 
 function PresetEditor({ preset, onClose }: { preset: CaffeinePreset | null; onClose: () => void }) {
   const [name, setName] = useState(preset?.name ?? '')
-  const [mg, setMg] = useState(String(preset?.caffeineMg ?? 63.6))
+  const [mg, setMg] = useState(String(preset?.caffeineMg ?? GENERIC_ESPRESSO_SHOT_MG))
   const [kind, setKind] = useState<'drink' | 'tablet'>(preset?.kind ?? 'drink')
   const [duration, setDuration] = useState(String(preset?.durationMinutes ?? 60))
   const [saving, setSaving] = useState(false)

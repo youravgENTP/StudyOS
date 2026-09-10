@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["src/features/caffeine/model.ts", "src/features/caffeine/model.test.ts", "src/features/caffeine/types.ts"],
+  "exclude": []
+}
