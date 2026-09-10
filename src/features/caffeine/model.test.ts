@@ -1,9 +1,26 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { alignedTimeTicks } from './chartTime.ts'
 import { DEFAULT_CAFFEINE_PRESETS } from './defaultPresets.ts'
 import { calculateRecommendedCutoff, calculateRemainingCaffeine, calculateTimeToResidual, nextBedtimeAt } from './model.ts'
 
 const closeTo = (actual: number, expected: number, tolerance = 0.01) => assert.ok(Math.abs(actual - expected) <= tolerance, `${actual} is not within ${tolerance} of ${expected}`)
+
+test('chart time labels align to a half-hour boundary', () => {
+  const ticksAfterHalfPast = alignedTimeTicks(new Date(2026, 8, 10, 11, 26, 48), new Date(2026, 8, 11, 3, 26))
+  assert.equal(ticksAfterHalfPast[0].getHours(), 11)
+  assert.equal(ticksAfterHalfPast[0].getMinutes(), 30)
+  assert.ok(ticksAfterHalfPast.every(tick => tick.getMinutes() === 30 && tick.getSeconds() === 0))
+
+  const ticksOnTheHour = alignedTimeTicks(new Date(2026, 8, 10, 11, 44), new Date(2026, 8, 11, 3, 44))
+  assert.equal(ticksOnTheHour[0].getHours(), 12)
+  assert.equal(ticksOnTheHour[0].getMinutes(), 0)
+  assert.ok(ticksOnTheHour.every(tick => tick.getMinutes() === 0 && tick.getSeconds() === 0))
+
+  const ticksAfterExactBoundary = alignedTimeTicks(new Date(2026, 8, 10, 11, 30, 1), new Date(2026, 8, 10, 16, 0))
+  assert.equal(ticksAfterExactBoundary[0].getHours(), 12)
+  assert.equal(ticksAfterExactBoundary[0].getMinutes(), 0)
+})
 
 test('generic shot presets use 75 mg per shot and one-hour intake windows', () => {
   const single = DEFAULT_CAFFEINE_PRESETS.find(preset => preset.id === 'single-shot')

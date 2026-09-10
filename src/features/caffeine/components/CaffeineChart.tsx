@@ -1,4 +1,5 @@
 import { useLayoutEffect, useMemo, useRef, type CSSProperties } from 'react'
+import { alignedTimeTicks } from '../chartTime'
 import { LOW_RESIDUAL_REFERENCE_MG, SLEEP_CAUTION_REFERENCE_MG, totalLoadAt } from '../model'
 import type { CaffeineIntake } from '../types'
 
@@ -74,7 +75,11 @@ export function CaffeineChart({ intakes, now, bedtime, axisFontSize, halfLifeHou
   const pastArea = `${pastLine} L${currentX},${plotBottom} L${chart.past[0].x},${plotBottom} Z`
   const futureArea = `${futureLine} L${chart.future.at(-1)?.x},${plotBottom} L${currentX},${plotBottom} Z`
   const ticks = Array.from({ length: 5 }, (_, index) => index * chart.step)
-  const timeTicks = Array.from({ length: 11 }, (_, index) => new Date(chart.start.getTime() + index * 4 * HOUR))
+  const timeTicks = alignedTimeTicks(chart.start, chart.end)
+  const bedtimeValue = bedtime ? totalLoadAt(intakes, bedtime, halfLifeHours) : null
+  const bedtimePoint = bedtime && bedtimeValue !== null && bedtime >= chart.start && bedtime <= chart.end
+    ? { x: chart.x(bedtime), y: chart.y(bedtimeValue), value: bedtimeValue }
+    : null
   const visibleIntakes = intakes.filter(intake => {
     const time = new Date(intake.startedAt)
     return time >= chart.start && time <= chart.end
@@ -94,8 +99,9 @@ export function CaffeineChart({ intakes, now, bedtime, axisFontSize, halfLifeHou
       <text x={W - R} y={lowResidualY + 15} textAnchor="end" className="residual-label">Low residual · {LOW_RESIDUAL_REFERENCE_MG} mg</text>
       <line x1={L} x2={W - R} y1={sleepCautionY} y2={sleepCautionY} className="sleep-caution-line" />
       <text x={W - R} y={sleepCautionY - 9} textAnchor="end" className="sleep-caution-label">Sleep caution reference · {SLEEP_CAUTION_REFERENCE_MG} mg</text>
-      {bedtime && bedtime >= chart.start && bedtime <= chart.end && <g><line x1={chart.x(bedtime)} x2={chart.x(bedtime)} y1={T} y2={plotBottom} className="bedtime-line" /><text x={chart.x(bedtime) - 5} y={T + 13} textAnchor="end" className="bedtime-label">Bedtime</text></g>}
+      {bedtimePoint && <g><line x1={bedtimePoint.x} x2={bedtimePoint.x} y1={T} y2={plotBottom} className="bedtime-line" /><text x={bedtimePoint.x - 5} y={T + 13} textAnchor="end" className="bedtime-label">Bedtime</text></g>}
       <path d={pastArea} fill="url(#caffeinePast)" /><path d={futureArea} fill="url(#caffeineFuture)" /><path d={pastLine} className="caffeine-line past" /><path d={futureLine} className="caffeine-line future" />
+      {bedtimePoint && <g className="bedtime-intersection"><circle cx={bedtimePoint.x} cy={bedtimePoint.y} r="5" fill="#a897df" stroke="var(--surface)" strokeWidth="3" /><text x={bedtimePoint.x - 10} y={Math.max(T + 31, bedtimePoint.y - 11)} textAnchor="end" fill="#c1b2ee" fontSize="11" fontWeight="700" paintOrder="stroke" stroke="var(--surface)" strokeWidth="4" strokeLinejoin="round">{Math.round(bedtimePoint.value)} mg</text></g>}
       {chart.localPeak && <g className="peak-marker"><circle cx={chart.x(chart.localPeak.time)} cy={chart.y(chart.localPeak.value)} r="6" /><text x={chart.x(chart.localPeak.time)} y={Math.max(T + 16, chart.y(chart.localPeak.value) - 15)} textAnchor={chart.x(chart.localPeak.time) > W - 180 ? 'end' : 'middle'}>Peak {Math.round(chart.localPeak.value)} mg · {timeLabel(chart.localPeak.time)}</text></g>}
       <g className="current-marker"><line x1={currentX} x2={currentX} y1={T} y2={plotBottom} className="now-line" /><circle cx={currentX} cy={currentY} r="8" className="now-dot" /><text x={currentX + 12} y={Math.max(T + 18, currentY - 13)}>Now {Math.round(chart.current.value)} mg</text></g>
       {visibleIntakes.map((intake, index) => { const x = chart.x(new Date(intake.startedAt)); const lane = index % 2; return <g className="intake-marker" key={intake.id}><line x1={x} x2={x} y1={plotBottom} y2={plotBottom + 35 + lane * 27} /><circle cx={x} cy={plotBottom} r="4" /><text x={x + 5} y={plotBottom + 43 + lane * 27}><tspan>{intake.source}</tspan><tspan x={x + 5} dy="13">{intake.caffeineMg} mg · {intake.durationMinutes} min</tspan></text></g> })}
