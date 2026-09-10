@@ -1,0 +1,17 @@
+.caffeine-header-summary { display: grid; grid-template-columns: auto auto; align-items: end; justify-items: end; column-gap: 20px; row-gap: 5px; margin-bottom: 22px; }
+.bedtime-caffeine { grid-row: 1 / 3; text-align: right; }
+.bedtime-caffeine > div { display: flex; align-items: baseline; justify-content: flex-end; gap: 6px; }
+.bedtime-caffeine strong { font-size: 38px; line-height: 1; letter-spacing: -.04em; }
+.bedtime-caffeine span { color: var(--muted); font-size: 13px; font-weight: 650; }
+.bedtime-caffeine small { display: block; margin-top: 5px; color: var(--muted); font-size: 12px; }
+.caffeine-header-summary .current-caffeine { margin: 0; }
+.caffeine-header-summary .current-caffeine strong { font-size: 19px; }
+.latest-caffeine { grid-column: 1 / -1; color: var(--muted); font-size: 11px; }
+.latest-caffeine strong { color: var(--text); }
+.bedtime-prompt { grid-row: 1 / 3; color: var(--accent); font-size: 12px; }
+
+@media (max-width: 760px) {
+  .caffeine-header-summary { justify-items: start; margin: 14px 0 0; }
+  .bedtime-caffeine { text-align: left; }
+  .bedtime-caffeine > div { justify-content: flex-start; }
+}

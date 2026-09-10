@@ -4,12 +4,13 @@ import { Link } from 'react-router-dom'
 import { createCaffeineIntake, deleteCaffeineIntake, deleteCaffeinePreset, saveCaffeinePreset } from './api/caffeine'
 import { CaffeineChart } from './components/CaffeineChart'
 import { DEFAULT_CAFFEINE_PRESETS } from './defaultPresets'
-import { calculateRecommendedCutoff, DEFAULT_CUTOFF_BUFFER_HOURS, GENERIC_SHOT_MG, nextBedtimeAt, totalLoadAt } from './model'
+import { calculateLatestAllowableIntakeTime, GENERIC_SHOT_MG, nextBedtimeAt, totalLoadAt } from './model'
 import type { CaffeinePreset, CaffeinePresetInput } from './types'
 import { useCaffeine } from './useCaffeine'
-import { useBedtime, useCaffeineAxisFontSize, useCaffeineHalfLifeHours } from '../settings/preferences'
+import { useBedtime, useBedtimeResidualTargetMg, useCaffeineAxisFontSize, useCaffeineHalfLifeHours } from '../settings/preferences'
 import './caffeine.css'
 import './presets.css'
+import './caffeine-header.css'
 
 const localInput = (date: Date) => new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
 const clock = (date: Date) => new Intl.DateTimeFormat('en', { hour: '2-digit', minute: '2-digit', hour12: false }).format(date)
@@ -20,6 +21,7 @@ export function CaffeinePage() {
   const axisFontSize = useCaffeineAxisFontSize()
   const bedtimeSetting = useBedtime()
   const halfLifeHours = useCaffeineHalfLifeHours()
+  const bedtimeResidualTargetMg = useBedtimeResidualTargetMg()
   const [now, setNow] = useState(new Date())
   const [intakeTime, setIntakeTime] = useState(() => localInput(new Date()))
   const [saving, setSaving] = useState(false)
@@ -32,9 +34,18 @@ export function CaffeinePage() {
   }, [])
 
   const bedtime = useMemo(() => bedtimeSetting ? nextBedtimeAt(now, bedtimeSetting) : null, [bedtimeSetting, now])
-  const cutoff = useMemo(() => bedtime ? calculateRecommendedCutoff({ bedtime, bufferHours: DEFAULT_CUTOFF_BUFFER_HOURS }) : null, [bedtime])
   const current = totalLoadAt(intakes, now, halfLifeHours)
   const allPresets = [...DEFAULT_CAFFEINE_PRESETS, ...presets]
+  const referencePreset = DEFAULT_CAFFEINE_PRESETS.find(preset => preset.id === 'double-shot') ?? DEFAULT_CAFFEINE_PRESETS[0]
+  const bedtimeLoad = bedtime ? totalLoadAt(intakes, bedtime, halfLifeHours) : null
+  const latestAllowable = useMemo(() => bedtime ? calculateLatestAllowableIntakeTime({
+    existingIntakes: intakes,
+    hypotheticalDoseMg: referencePreset.caffeineMg,
+    hypotheticalDurationMinutes: referencePreset.durationMinutes,
+    bedtime,
+    targetResidualMg: bedtimeResidualTargetMg,
+    halfLifeHours,
+  }) : null, [bedtime, bedtimeResidualTargetMg, halfLifeHours, intakes, referencePreset.caffeineMg, referencePreset.durationMinutes])
 
   async function take(preset: CaffeinePreset) {
     const startedAt = new Date(intakeTime)
@@ -60,16 +71,20 @@ export function CaffeinePage() {
   return <div className="page caffeine-page">
     <header className="caffeine-heading">
       <div><div className="eyebrow">Intake and decay estimate</div><h1 className="page-title">Caffeine intake</h1></div>
-      <div className="current-caffeine"><strong className="tabular">{Math.round(current)}</strong><span>mg now</span></div>
+      <div className="caffeine-header-summary">
+        {bedtime && bedtimeLoad !== null
+          ? <div className="bedtime-caffeine"><div><strong className="tabular">{Math.round(bedtimeLoad)}</strong><span>mg</span></div><small>at bedtime · {clock(bedtime)}</small></div>
+          : <Link className="bedtime-prompt" to="/settings">Set a regular bedtime</Link>}
+        <div className="current-caffeine"><strong className="tabular">{Math.round(current)}</strong><span>mg now</span></div>
+        {bedtime && <div className="latest-caffeine">{latestAllowable
+          ? <>Latest {referencePreset.caffeineMg} mg · <strong className="tabular">{datedClock(latestAllowable)}</strong></>
+          : <>No additional caffeine fits the bedtime target</>}</div>}
+      </div>
     </header>
-
-    <div className="caffeine-cutoff">
-      {bedtime && cutoff ? <><span>Recommended caffeine cutoff</span><strong className="tabular">{datedClock(cutoff)}</strong><small>Bedtime {clock(bedtime)} · {DEFAULT_CUTOFF_BUFFER_HOURS} h buffer</small></> : <><span>Recommended caffeine cutoff</span><Link to="/settings">Set a regular bedtime in Settings to enable guidance.</Link></>}
-    </div>
 
     <section className="caffeine-graph card">
       <div className="card-head"><h2>Caffeine curve</h2></div>
-      {loading ? <p className="empty-copy">Loading…</p> : <CaffeineChart intakes={intakes} now={now} bedtime={bedtime} axisFontSize={axisFontSize} halfLifeHours={halfLifeHours} />}
+      {loading ? <p className="empty-copy">Loading…</p> : <CaffeineChart intakes={intakes} now={now} bedtime={bedtime} axisFontSize={axisFontSize} halfLifeHours={halfLifeHours} bedtimeResidualTargetMg={bedtimeResidualTargetMg} />}
       {error && <p className="feature-error">{error}</p>}
     </section>
 

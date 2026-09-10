@@ -17,6 +17,7 @@ function failure(operation: string, userMessage: string, error: unknown) {
 function mapItem(row: Record<string, unknown>): RoutineItem {
   return {
     id: String(row.id),
+    sourceItemId: row.source_item_id ? String(row.source_item_id) : null,
     position: Number(row.position),
     scheduledTime: row.scheduled_time ? String(row.scheduled_time).slice(0, 5) : null,
     title: String(row.title),
@@ -61,17 +62,17 @@ export async function deleteTemplateItem(id: string) {
   notify()
 }
 
-export async function moveTemplateItem(items: RoutineItem[], id: string, direction: -1 | 1) {
+export async function reorderTemplateItem(items: RoutineItem[], id: string, targetIndex: number) {
   const index = items.findIndex(item => item.id === id)
-  const swap = index + direction
-  if (index < 0 || swap < 0 || swap >= items.length) return
-  const first = items[index]
-  const second = items[swap]
-  const [a, b] = await Promise.all([
-    dataApi.from('routine_template_items').update({ position: second.position }).eq('id', first.id),
-    dataApi.from('routine_template_items').update({ position: first.position }).eq('id', second.id),
-  ])
-  if (a.error || b.error) throw failure('reorder template items', '루틴 순서를 변경하지 못했습니다.', a.error ?? b.error)
+  if (index < 0 || targetIndex < 0 || targetIndex >= items.length || index === targetIndex) return
+  const reordered = [...items]
+  const [moved] = reordered.splice(index, 1)
+  reordered.splice(targetIndex, 0, moved)
+  const results = await Promise.all(reordered.map((item, position) => item.position === position
+    ? Promise.resolve({ error: null })
+    : dataApi.from('routine_template_items').update({ position }).eq('id', item.id)))
+  const failed = results.find(result => result.error)
+  if (failed?.error) throw failure('reorder template items', '루틴 순서를 변경하지 못했습니다.', failed.error)
   notify()
 }
 
@@ -79,7 +80,7 @@ export async function getDailyRoutine(date: string) {
   const ensured = await dataApi.rpc('ensure_routine_instance', { target_date: date })
   if (ensured.error) throw failure('ensure daily snapshot', '오늘의 루틴을 불러오지 못했습니다.', ensured.error)
   const instanceId = String(ensured.data)
-  const { data, error } = await dataApi.from('routine_instance_items').select('id,position,scheduled_time,title,details,completed_at').eq('instance_id', instanceId).order('position')
+  const { data, error } = await dataApi.from('routine_instance_items').select('id,source_item_id,position,scheduled_time,title,details,completed_at').eq('instance_id', instanceId).order('position')
   if (error) throw failure('load daily snapshot', '오늘의 루틴을 불러오지 못했습니다.', error)
   return (data ?? []).map(row => mapItem(row as Record<string, unknown>))
 }
