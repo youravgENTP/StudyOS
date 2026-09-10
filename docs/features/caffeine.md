@@ -7,7 +7,7 @@ summary: Records caffeine intake and estimates a time-varying body load from abs
 
 # Caffeine
 
-Caffeine records a source, dose, start time, and intake or absorption duration. StudyOS's editable generic defaults are 75 mg for one espresso shot and 150 mg for one Americano (two generic shots); these are planning defaults, not claims about every cafe. The Americano distributes intake uniformly over 60 minutes. The built-in 50 mg and 100 mg tablet presets use a 45-minute absorption window. Users can create, edit, and delete their own persisted presets.
+Caffeine records a source, dose, start time, and intake or absorption duration. StudyOS's generic coffee presets are a 75 mg single shot and a 150 mg double shot (2 × 75 mg), both distributed uniformly over 60 minutes. These are editable planning defaults, not claims about every cafe. The built-in 50 mg and 100 mg tablet presets use a 45-minute absorption window. Users can create, edit, and delete their own persisted presets.
 
 Each intake uses a one-compartment approximation with first-order elimination. During the drinking window, a constant input rate and elimination occur simultaneously; after drinking ends, the remaining amount decays exponentially. Multiple intakes are summed independently. The configurable default half-life is 5 hours, with a Settings range of 2–10 hours. Pure decay uses `dose × 0.5^(elapsedHours / halfLifeHours)`; the chart and all current-milligram summaries share `totalLoadAt`.
 

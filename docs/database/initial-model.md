@@ -7,9 +7,9 @@ summary: Proposed durable Neon Postgres records, documented before migrations ar
 
 # Initial data model
 
-Every user-owned table will include `user_id`, timestamps where appropriate, and PostgreSQL Row Level Security restricting rows to the owning Neon Auth identity through `auth.user_id()`.
+Every user-owned table includes `user_id`, timestamps where appropriate, and PostgreSQL Row Level Security restricting rows to the owning Neon Auth identity. Where the Data API role cannot access Neon's protected `auth` schema, a narrow private security-definer helper resolves the JWT identity without granting broad schema access.
 
-Future policies must explicitly protect `SELECT`, `INSERT`, `UPDATE`, and `DELETE` as appropriate. Their ownership condition is conceptually `auth.user_id() = user_id`. Browser queries travel through the authenticated Neon Data API; direct PostgreSQL connection strings never reach the browser.
+Future policies must explicitly protect `SELECT`, `INSERT`, `UPDATE`, and `DELETE` as appropriate. Their ownership condition is conceptually `current JWT user ID = user_id`. Browser queries travel through the authenticated Neon Data API; direct PostgreSQL connection strings never reach the browser.
 
 | Table | Purpose | Important relationships |
 | --- | --- | --- |
@@ -24,4 +24,4 @@ Future policies must explicitly protect `SELECT`, `INSERT`, `UPDATE`, and `DELET
 | `caffeine_presets` | Implemented: reusable user-defined drinks and tablets | Built-ins remain in application code; custom presets are owner-only records |
 | `user_settings` | Cross-feature preferences | One row per user |
 
-`study_sessions`, Tasks/Subjects, Routine, Habits, Calendar Events, and Caffeine are implemented. Migration 0001 creates study sessions, migration 0002 binds policies to the sole account stored in a non-API `private` schema, migration 0003 creates tasks and subjects, migration 0004 creates weekday routine templates plus durable daily snapshots, migration 0005 creates habit definitions and daily completions, migration 0006 adds task D-Day presentation, migration 0007 creates events, migration 0008 creates caffeine intakes, and migration 0009 creates reusable caffeine presets. Settings storage and all other table-specific policies wait for their implementation slices.
+`study_sessions`, Tasks/Subjects, Routine, Habits, Calendar Events, and Caffeine are implemented. Migration 0001 creates study sessions, migration 0002 binds policies to the sole account stored in a non-API `private` schema, migration 0003 creates tasks and subjects, migration 0004 creates weekday routine templates plus durable daily snapshots, migration 0005 creates habit definitions and daily completions, migration 0006 adds task D-Day presentation, migration 0007 creates events, migration 0008 creates caffeine intakes, migration 0009 creates reusable caffeine presets, and migration 0010 moves Routine identity resolution behind a narrow private JWT helper. Settings storage and all other table-specific policies wait for their implementation slices.

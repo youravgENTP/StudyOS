@@ -1,8 +1,16 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { DEFAULT_CAFFEINE_PRESETS } from './defaultPresets.ts'
 import { calculateRecommendedCutoff, calculateRemainingCaffeine, calculateTimeToResidual, nextBedtimeAt } from './model.ts'
 
 const closeTo = (actual: number, expected: number, tolerance = 0.01) => assert.ok(Math.abs(actual - expected) <= tolerance, `${actual} is not within ${tolerance} of ${expected}`)
+
+test('generic shot presets use 75 mg per shot and one-hour intake windows', () => {
+  const single = DEFAULT_CAFFEINE_PRESETS.find(preset => preset.id === 'single-shot')
+  const double = DEFAULT_CAFFEINE_PRESETS.find(preset => preset.id === 'double-shot')
+  assert.deepEqual(single && { dose: single.caffeineMg, duration: single.durationMinutes }, { dose: 75, duration: 60 })
+  assert.deepEqual(double && { dose: double.caffeineMg, duration: double.durationMinutes }, { dose: 150, duration: 60 })
+})
 
 test('150 mg follows a five-hour exponential half-life', () => {
   closeTo(calculateRemainingCaffeine({ doseMg: 150, elapsedHours: 0, halfLifeHours: 5 }), 150)
