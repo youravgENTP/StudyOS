@@ -9,6 +9,8 @@ import { PlaceholderPage } from './features/shared/PlaceholderPage'
 import { SettingsPage } from './features/settings/SettingsPage'
 import { TasksPage } from './features/tasks/TasksPage'
 import { ProjectDetailPage } from './features/tasks/ProjectDetailPage'
+import { SchedulesPage } from './features/schedules/SchedulesPage'
+import { QuotesPage } from './features/quotes/QuotesPage'
 import './App.css'
 
 export default function App() {
@@ -17,11 +19,13 @@ export default function App() {
       <Route element={<AppShell />}>
         <Route index element={<DashboardPage />} />
         <Route path="calendar" element={<CalendarPage />} />
+        <Route path="schedules" element={<SchedulesPage />} />
         <Route path="caffeine" element={<CaffeinePage />} />
         <Route path="tasks" element={<TasksPage />} />
         <Route path="tasks/:projectId" element={<ProjectDetailPage />} />
         <Route path="routine" element={<RoutinePage />} />
         <Route path="habits" element={<HabitsPage />} />
+        <Route path="quotes" element={<QuotesPage />} />
 
         <Route path="stats" element={<PlaceholderPage title="Stats" />} />
         <Route path="settings" element={<SettingsPage />} />

@@ -1,10 +1,12 @@
 import { useSyncExternalStore } from 'react'
 import { DEFAULT_BEDTIME_RESIDUAL_TARGET_MG, DEFAULT_HALF_LIFE_HOURS } from '../caffeine/model'
+import type { WeekStart } from '../calendar/date'
 
 const AXIS_FONT_KEY = 'studyos:caffeine-axis-font-size'
 const BEDTIME_KEY = 'studyos:bedtime'
 const HALF_LIFE_KEY = 'studyos:caffeine-half-life-hours'
 const BEDTIME_RESIDUAL_TARGET_KEY = 'studyos:bedtime-residual-target-mg'
+const WEEK_START_KEY = 'studyos:week-start'
 const SETTINGS_CHANGED = 'studyos:settings-changed'
 export const DEFAULT_AXIS_FONT_SIZE = 14
 
@@ -64,6 +66,15 @@ export function setBedtimeResidualTargetMg(value: number) {
   changed()
 }
 
+export function getWeekStartsOn(): WeekStart {
+  return localStorage.getItem(WEEK_START_KEY) === '1' ? 1 : 0
+}
+
+export function setWeekStartsOn(value: WeekStart) {
+  localStorage.setItem(WEEK_START_KEY, String(value))
+  changed()
+}
+
 export function useCaffeineAxisFontSize() {
   return useSyncExternalStore(subscribe, getCaffeineAxisFontSize, () => DEFAULT_AXIS_FONT_SIZE)
 }
@@ -78,4 +89,8 @@ export function useCaffeineHalfLifeHours() {
 
 export function useBedtimeResidualTargetMg() {
   return useSyncExternalStore(subscribe, getBedtimeResidualTargetMg, () => DEFAULT_BEDTIME_RESIDUAL_TARGET_MG)
+}
+
+export function useWeekStartsOn() {
+  return useSyncExternalStore(subscribe, getWeekStartsOn, () => 0 as WeekStart)
 }

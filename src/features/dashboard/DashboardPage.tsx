@@ -1,2 +1,12 @@
-import{StudyTimerCard}from'../study-timer/StudyTimerCard';import{DashboardCaffeineCard}from'./DashboardCaffeineCard';import{DashboardHabitsCard}from'./DashboardHabitsCard';import{DashboardRoutineCard}from'./DashboardRoutineCard';import{DashboardTasksCard}from'./DashboardTasksCard'
-export function DashboardPage(){const date=new Intl.DateTimeFormat('en',{weekday:'long',month:'long',day:'numeric'}).format(new Date());return <div className="page"><div className="eyebrow">{date}</div><h1 className="page-title">Today</h1><div className="dashboard-grid"><div className="primary-column"><StudyTimerCard/><DashboardRoutineCard/><DashboardTasksCard/></div><aside className="secondary-column"><section className="card upcoming-card"><div className="card-head"><h2>Upcoming</h2><span className="meta">Major events</span></div><div className="upcoming-list"><div className="upcoming"><span>Lab Report</span><strong className="tabular">D-3</strong><small>September 12</small></div><div className="upcoming"><span>Pharmacology 2 Midterm</span><strong className="tabular">D-27</strong><small>October 6</small></div></div></section><DashboardCaffeineCard/><DashboardHabitsCard/></aside></div></div>}
+import { StudyTimerCard } from '../study-timer/StudyTimerCard'
+import { DashboardCaffeineCard } from './DashboardCaffeineCard'
+import { DashboardHabitsCard } from './DashboardHabitsCard'
+import { DashboardMajorSchedulesCard } from './DashboardMajorSchedulesCard'
+import { DashboardQuoteCard } from './DashboardQuoteCard'
+import { DashboardRoutineCard } from './DashboardRoutineCard'
+import { DashboardTasksCard } from './DashboardTasksCard'
+
+export function DashboardPage() {
+  const date = new Intl.DateTimeFormat('en', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date())
+  return <div className="page"><div className="eyebrow">{date}</div><h1 className="page-title">Today</h1><div className="dashboard-grid"><div className="primary-column"><DashboardQuoteCard /><StudyTimerCard /><DashboardRoutineCard /><DashboardTasksCard /></div><aside className="secondary-column"><DashboardMajorSchedulesCard /><DashboardCaffeineCard /><DashboardHabitsCard /></aside></div></div>
+}

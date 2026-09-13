@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { X } from 'lucide-react'
 import { createProject, createTask, createWorkstream, deleteProject, deleteTask, deleteWorkstream, updateProject, updateTask, updateWorkstream } from '../api/tasks'
-import { taskCategoryLabels, taskStatusLabels, type PlanningEntity, type Project, type Subject, type Task, type TaskCategory, type TaskStatus, type Workstream } from '../types'
+import { academicTermLabels, taskCategoryLabels, taskStatusLabels, type PlanningEntity, type Project, type Subject, type Task, type TaskCategory, type TaskStatus, type Workstream } from '../types'
 
 type Kind = 'project' | 'workstream' | 'task'
 type Props = { kind: Kind; projects: Project[]; workstreams: Workstream[]; subjects: Subject[]; project?: Project; workstream?: Workstream | null; editing?: PlanningEntity | null; onClose: () => void }
@@ -19,6 +19,8 @@ export function EntityEditor({ kind, projects, workstreams, subjects, project, w
   const [dueDate, setDueDate] = useState(existing?.dueDate ?? inheritedDue)
   const [status, setStatus] = useState<TaskStatus>(existing?.status ?? 'not_started')
   const [isDday, setIsDday] = useState(existing?.isDday ?? false)
+  const [showOnCalendar, setShowOnCalendar] = useState(existing && 'showOnCalendar' in existing ? existing.showOnCalendar : true)
+  const [isDeadline, setIsDeadline] = useState(existing && 'isDeadline' in existing ? existing.isDeadline : false)
   const [projectId, setProjectId] = useState(initialProjectId)
   const [workstreamId, setWorkstreamId] = useState(initialWorkstreamId)
   const [subjectId, setSubjectId] = useState(existing && 'subjectId' in existing ? existing.subjectId ?? '' : '')
@@ -35,12 +37,12 @@ export function EntityEditor({ kind, projects, workstreams, subjects, project, w
         else await createProject(common)
       }
       if (kind === 'workstream') {
-        const input = { ...common, projectId, subjectId: subjectId || null }
+        const input = { ...common, projectId, subjectId: subjectId || null, showOnCalendar }
         if (editing) await updateWorkstream(editing.id, input)
         else await createWorkstream(input)
       }
       if (kind === 'task') {
-        const input = { ...common, projectId, workstreamId: workstreamId || null }
+        const input = { ...common, projectId, workstreamId: workstreamId || null, showOnCalendar, isDeadline }
         if (editing) await updateTask(editing.id, input)
         else await createTask(input)
       }
@@ -64,12 +66,14 @@ export function EntityEditor({ kind, projects, workstreams, subjects, project, w
       <div><span className="eyebrow">{editing ? 'Edit' : 'New'} {kind}</span><h2>{editing?.title ?? `Create ${kind}`}</h2></div>
       {kind !== 'project' && <label>Project<select value={projectId} required onChange={event => { setProjectId(event.target.value); setWorkstreamId('') }}><option value="">Select project</option>{projects.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>}
       {kind === 'task' && <label>Workstream <small>Optional</small><select value={workstreamId} onChange={event => setWorkstreamId(event.target.value)}><option value="">Directly under project</option>{availableWorkstreams.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>}
-      {kind === 'workstream' && <label>Subject <small>Optional</small><select value={subjectId} onChange={event => setSubjectId(event.target.value)}><option value="">No subject</option>{subjects.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}
+      {kind === 'workstream' && <label>Subject <small>Optional</small><select value={subjectId} onChange={event => setSubjectId(event.target.value)}><option value="">No subject</option>{subjects.map(item => <option key={item.id} value={item.id}>{item.academicYear}-{academicTermLabels[item.academicTerm]} · {item.name}</option>)}</select></label>}
       <label>Title<input autoFocus value={title} onChange={event => setTitle(event.target.value)} maxLength={240} required /></label>
       <label>Description <small>Optional</small><textarea value={description} onChange={event => setDescription(event.target.value)} maxLength={4000} /></label>
       <div className="entity-editor-pair"><label>Start <small>Optional</small><input type="date" value={startDate} max={dueDate || undefined} onChange={event => setStartDate(event.target.value)} /></label><label>Due<input type="date" value={dueDate} min={startDate || undefined} onChange={event => setDueDate(event.target.value)} required /></label></div>
       <div className="entity-editor-pair"><label>Category<select value={category} onChange={event => setCategory(event.target.value as TaskCategory)}>{Object.entries(taskCategoryLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label>Status<select value={status} onChange={event => setStatus(event.target.value as TaskStatus)}>{Object.entries(taskStatusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label></div>
       <label className="entity-editor-check"><input type="checkbox" checked={isDday} onChange={event => setIsDday(event.target.checked)} /> Pin as D-Day</label>
+      {kind !== 'project' && <label className="entity-editor-check"><input type="checkbox" checked={showOnCalendar} onChange={event => setShowOnCalendar(event.target.checked)} /> Show this {kind === 'workstream' ? 'Workstream' : 'Task'} on Calendar</label>}
+      {kind === 'task' && <label className="entity-editor-check"><input type="checkbox" checked={isDeadline} onChange={event => setIsDeadline(event.target.checked)} /> Show due date as a Timeline deadline</label>}
       {error && <p className="form-error">{error}</p>}
       <div className="entity-editor-actions">{editing && <button type="button" className="danger" onClick={() => void remove()}>Delete</button>}<span /><button type="button" onClick={onClose}>Cancel</button><button className="primary" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button></div>
     </form>

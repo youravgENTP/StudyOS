@@ -5,11 +5,11 @@ import type { Project, ProjectInput, Task, TaskInput, Workstream, WorkstreamInpu
 
 const base = { title: 'Item', description: null, category: 'study' as const, startDate: null, dueDate: '2026-10-10', status: 'not_started' as const, isDday: false }
 const projectInput: ProjectInput = { ...base }
-const workstreamInput: WorkstreamInput = { ...base, projectId: 'p1', subjectId: null }
-const taskInput: TaskInput = { ...base, projectId: 'p1', workstreamId: null }
+const workstreamInput: WorkstreamInput = { ...base, projectId: 'p1', subjectId: null, showOnCalendar: true }
+const taskInput: TaskInput = { ...base, projectId: 'p1', workstreamId: null, showOnCalendar: true, isDeadline: false }
 const project: Project = { ...base, id: 'p1', position: 0, completedAt: null, createdAt: '2026-09-10', status: 'in_progress' }
-const workstream: Workstream = { ...base, id: 'w1', projectId: 'p1', subjectId: null, subject: null, position: 0, completedAt: null, createdAt: '2026-09-10' }
-const makeTask = (id: string, status: Task['status'], workstreamId: string | null): Task => ({ ...base, id, projectId: 'p1', workstreamId, status, completedAt: status === 'done' ? '2026-09-10' : null, position: 0, createdAt: '2026-09-10' })
+const workstream: Workstream = { ...base, id: 'w1', projectId: 'p1', subjectId: null, subject: null, showOnCalendar: true, position: 0, completedAt: null, createdAt: '2026-09-10' }
+const makeTask = (id: string, status: Task['status'], workstreamId: string | null): Task => ({ ...base, id, projectId: 'p1', workstreamId, showOnCalendar: true, isDeadline: false, status, completedAt: status === 'done' ? '2026-09-10' : null, position: 0, createdAt: '2026-09-10' })
 
 test('Task requires Project while Workstream remains optional', () => {
   assert.equal(validateTaskInput({ ...taskInput, projectId: '' }), 'Project is required.')

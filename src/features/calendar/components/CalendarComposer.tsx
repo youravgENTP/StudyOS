@@ -1,13 +1,13 @@
 import { useState, type FormEvent } from 'react'
 import { X } from 'lucide-react'
 import { createTask, deleteTask, updateTask } from '../../tasks/api/tasks'
-import { taskCategoryLabels, taskStatusLabels, type Project, type Subject, type Task, type TaskCategory, type TaskStatus, type Workstream } from '../../tasks/types'
+import { academicTermLabels, taskCategoryLabels, taskStatusLabels, type Project, type Subject, type Task, type TaskCategory, type TaskStatus, type Workstream } from '../../tasks/types'
 import { createEvent, deleteEvent, updateEvent } from '../api/events'
-import type { CalendarEvent } from '../types'
+import type { CalendarEvent, ScheduleSubcategory } from '../types'
 
 type Selection = { kind: 'task'; value: Task } | { kind: 'event'; value: CalendarEvent }
 
-export function CalendarComposer({ date, projects, workstreams, subjects, editing, onClose }: { date: string; projects: Project[]; workstreams: Workstream[]; subjects: Subject[]; editing: Selection | null; onClose: () => void }) {
+export function CalendarComposer({ date, projects, workstreams, subjects, subcategories, editing, onClose }: { date: string; projects: Project[]; workstreams: Workstream[]; subjects: Subject[]; subcategories: ScheduleSubcategory[]; editing: Selection | null; onClose: () => void }) {
   const taskEditing = editing?.kind === 'task' ? editing.value : null
   const eventEditing = editing?.kind === 'event' ? editing.value : null
   const [kind, setKind] = useState<'event' | 'task'>(editing?.kind ?? 'event')
@@ -15,15 +15,17 @@ export function CalendarComposer({ date, projects, workstreams, subjects, editin
   const [description, setDescription] = useState(taskEditing?.description ?? '')
   const [category, setCategory] = useState<TaskCategory>(editing?.value.category ?? 'personal')
   const [subjectId, setSubjectId] = useState(eventEditing?.subjectId ?? '')
+  const [subcategoryId, setSubcategoryId] = useState(eventEditing?.subcategoryId ?? '')
   const [projectId, setProjectId] = useState(taskEditing?.projectId ?? projects[0]?.id ?? '')
   const [workstreamId, setWorkstreamId] = useState(taskEditing?.workstreamId ?? '')
-  const [startDate, setStartDate] = useState(taskEditing?.startDate ?? '')
-  const [dueDate, setDueDate] = useState(taskEditing?.dueDate ?? date)
+  const [startDate, setStartDate] = useState(taskEditing?.startDate ?? eventEditing?.startDate ?? date)
+  const [dueDate, setDueDate] = useState(taskEditing?.dueDate ?? eventEditing?.endDate ?? date)
   const [status, setStatus] = useState<TaskStatus>(taskEditing?.status ?? 'not_started')
   const [allDay, setAllDay] = useState(eventEditing?.allDay ?? true)
   const [startTime, setStartTime] = useState(eventEditing?.startTime?.slice(0, 5) ?? '09:00')
   const [endTime, setEndTime] = useState(eventEditing?.endTime?.slice(0, 5) ?? '10:00')
   const [isMajor, setIsMajor] = useState(eventEditing?.isMajor ?? taskEditing?.isDday ?? false)
+  const [displayStyle, setDisplayStyle] = useState<'compact' | 'bar'>(eventEditing?.displayStyle ?? 'compact')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const availableWorkstreams = workstreams.filter(item => item.projectId === projectId)
@@ -32,11 +34,11 @@ export function CalendarComposer({ date, projects, workstreams, subjects, editin
     event.preventDefault(); setSaving(true); setError('')
     try {
       if (kind === 'task') {
-        const input = { title, description: description || null, category, projectId, workstreamId: workstreamId || null, startDate: startDate || null, dueDate, status, isDday: isMajor }
+        const input = { title, description: description || null, category, projectId, workstreamId: workstreamId || null, startDate: startDate || null, dueDate, status, isDday: isMajor, showOnCalendar: taskEditing?.showOnCalendar ?? true, isDeadline: taskEditing?.isDeadline ?? false }
         if (taskEditing) await updateTask(taskEditing.id, input)
         else await createTask(input)
       } else {
-        const input = { title, category, subjectId: category === 'study' && subjectId ? subjectId : null, allDay, startDate: date, startTime: allDay ? null : startTime, endDate: date, endTime: allDay ? null : endTime, isMajor }
+        const input = { title, category, subjectId: category === 'study' && subjectId ? subjectId : null, subcategoryId: subcategoryId || null, allDay, startDate, startTime: allDay ? null : startTime, endDate: dueDate, endTime: allDay ? null : endTime, isMajor, displayStyle }
         if (eventEditing) await updateEvent(eventEditing.id, input)
         else await createEvent(input)
       }
@@ -62,12 +64,14 @@ export function CalendarComposer({ date, projects, workstreams, subjects, editin
       <div className="popover-row"><label>Status</label><select value={status} onChange={event => setStatus(event.target.value as TaskStatus)}>{Object.entries(taskStatusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
       <textarea className="popover-description" value={description} onChange={event => setDescription(event.target.value)} placeholder="Details (optional)" maxLength={4000} />
     </> : <>
-      <div className="popover-row"><span>날짜</span><strong>{date}</strong></div>
-      {category === 'study' && <div className="popover-row"><label>과목</label><select value={subjectId} onChange={event => setSubjectId(event.target.value)}><option value="">과목 없음</option>{subjects.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div>}
+      <div className="popover-times"><input type="date" value={startDate} max={dueDate} onChange={event => setStartDate(event.target.value)} required aria-label="Event start date" /><span>–</span><input type="date" value={dueDate} min={startDate} onChange={event => setDueDate(event.target.value)} required aria-label="Event end date" /></div>
+      {category === 'study' && <div className="popover-row"><label>과목</label><select value={subjectId} onChange={event => setSubjectId(event.target.value)}><option value="">과목 없음</option>{subjects.map(item => <option key={item.id} value={item.id}>{item.academicYear}-{academicTermLabels[item.academicTerm]} · {item.name}</option>)}</select></div>}
       <div className="popover-check"><label><input type="checkbox" checked={allDay} onChange={event => setAllDay(event.target.checked)} /> 하루 종일</label></div>
       {!allDay && <div className="popover-times"><input type="time" value={startTime} onChange={event => setStartTime(event.target.value)} /><span>–</span><input type="time" value={endTime} onChange={event => setEndTime(event.target.value)} /></div>}
     </>}
-    <div className="popover-row"><label>분류</label><select value={category} onChange={event => setCategory(event.target.value as TaskCategory)}>{Object.entries(taskCategoryLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
+    <div className="popover-row"><label>분류</label><select value={category} onChange={event => { setCategory(event.target.value as TaskCategory); setSubcategoryId('') }}>{Object.entries(taskCategoryLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
+    {kind === 'event' && <div className="popover-row"><label>하위 분류</label><select value={subcategoryId} onChange={event => setSubcategoryId(event.target.value)}><option value="">분류 없음</option>{subcategories.filter(item => item.category === category).map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div>}
+    {kind === 'event' && <div className="popover-row"><label>표시 방식</label><select value={displayStyle} onChange={event => setDisplayStyle(event.target.value as 'compact' | 'bar')}><option value="compact">일반 표시</option><option value="bar">Bar로 표시</option></select></div>}
     <div className="popover-check"><label><input type="checkbox" checked={isMajor} onChange={event => setIsMajor(event.target.checked)} /> {kind === 'event' ? '중요 일정' : 'D-Day'}</label></div>
     {kind === 'task' && !projects.length && <p className="form-error">Create a Project in Tasks before adding a Task.</p>}
     {error && <p className="form-error">{error}</p>}

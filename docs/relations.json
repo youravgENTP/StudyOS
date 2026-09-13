@@ -8,6 +8,7 @@
     {"id":"habits","type":"feature","title":"Habits","summary":"Recurring behaviors with daily evidence and a contribution-style consistency view.","doc":"features/habits.md","position":{"x":290,"y":680}},
     {"id":"calendar","type":"feature","title":"Calendar","summary":"Full-screen ten-week planning for Events, Workstream spans, and Task spans or deadlines.","doc":"features/calendar.md","position":{"x":290,"y":850}},
     {"id":"caffeine","type":"feature","title":"Caffeine intake","summary":"Intake records projected as a scrollable time-varying estimated body load.","doc":"features/caffeine.md","position":{"x":290,"y":1020}},
+    {"id":"quotes","type":"feature","title":"Quotes","summary":"Categorized quotation CRUD with a daily Dashboard projection.","doc":"features/quotes.md","position":{"x":290,"y":1120}},
     {"id":"settings","type":"feature","title":"Settings","summary":"Device-local bedtime, residual target, caffeine half-life, and chart display preferences.","doc":"features/settings.md","position":{"x":290,"y":1190}},
     {"id":"neon-backend","type":"service","title":"Neon Backend","summary":"Groups the Auth, Data API, and RLS-backed Postgres boundary.","doc":"services/neon-backend.md","position":{"x":580,"y":20}},
     {"id":"neon-auth","type":"service","title":"Neon Auth","summary":"Owns real user sessions and provides authenticated JWTs.","doc":"services/neon-auth.md","position":{"x":580,"y":170}},
@@ -21,6 +22,7 @@
     {"id":"habit-tables","type":"database","title":"habit definitions & completions","summary":"Recurring behavior definitions and one completion record per date.","doc":"database/initial-model.md","position":{"x":1160,"y":760}},
     {"id":"events-table","type":"database","title":"events","summary":"Timed and all-day calendar records with optional Study subjects.","doc":"database/initial-model.md","position":{"x":1160,"y":930}},
     {"id":"caffeine-tables","type":"database","title":"caffeine intakes & presets","summary":"Dose history plus reusable owner-defined drink and tablet presets.","doc":"database/initial-model.md","position":{"x":1160,"y":1100}},
+    {"id":"quote-tables","type":"database","title":"quote categories & quotes","summary":"Owner-managed categorized quotations and Dashboard eligibility.","doc":"database/initial-model.md","position":{"x":1160,"y":1220}},
     {"id":"vercel-deployment","type":"service","title":"Vercel Deployment","summary":"Hosts the StudyOS PWA over HTTPS for Mac and iPhone access.","doc":"services/vercel-deployment.md","position":{"x":0,"y":-100}}
   ],
   "edges": [
@@ -32,6 +34,8 @@
     {"id":"dashboard-routine","from":"dashboard","to":"routine","label":"projects","summary":"The Dashboard shows completion progress from today's routine instance."},
     {"id":"dashboard-habits","from":"dashboard","to":"habits","label":"projects","summary":"The Dashboard shows today's scheduled habit completion count."},
     {"id":"dashboard-caffeine","from":"dashboard","to":"caffeine","label":"projects","summary":"The Dashboard shows current and bedtime estimates plus existing-load-aware latest-dose guidance."},
+    {"id":"dashboard-quotes","from":"dashboard","to":"quotes","label":"projects","summary":"The Dashboard selects a stable daily quote from enabled categories."},
+    {"id":"shell-quotes","from":"application-shell","to":"quotes","label":"renders","summary":"The shell exposes the Quotes management route."},
     {"id":"shell-settings","from":"application-shell","to":"settings","label":"renders","summary":"The shell exposes the Settings route on desktop and mobile."},
     {"id":"settings-caffeine","from":"settings","to":"caffeine","label":"configures","summary":"Device-local bedtime, bedtime residual target, half-life, and axis-label preferences drive Caffeine calculations and display."},
     {"id":"shell-auth","from":"application-shell","to":"neon-auth","label":"observes session","summary":"The root Auth provider makes the current Neon session available to application UI."},
@@ -54,6 +58,8 @@
     {"id":"data-api-events","from":"neon-data-api","to":"events-table","label":"RLS query","summary":"Event records are available only to the configured owner."},
     {"id":"caffeine-data-api","from":"caffeine","to":"neon-data-api","label":"CRUD","summary":"Caffeine intake and custom preset records use authenticated Data API operations."},
     {"id":"data-api-caffeine","from":"neon-data-api","to":"caffeine-tables","label":"RLS query","summary":"Caffeine intake and preset records are available only to the configured owner."},
+    {"id":"quotes-data-api","from":"quotes","to":"neon-data-api","label":"CRUD","summary":"Quotes and their categories use authenticated owner-only Data API operations."},
+    {"id":"data-api-quotes","from":"neon-data-api","to":"quote-tables","label":"owner-only RLS","summary":"Quote records are available only to their authenticated owner."},
     {"id":"vercel-shell","from":"vercel-deployment","to":"application-shell","label":"hosts","summary":"Vercel serves the built StudyOS PWA over a stable HTTPS origin."}
   ]
 }

@@ -1,15 +1,25 @@
-import { setBedtime, setBedtimeResidualTargetMg, setCaffeineAxisFontSize, setCaffeineHalfLifeHours, useBedtime, useBedtimeResidualTargetMg, useCaffeineAxisFontSize, useCaffeineHalfLifeHours } from './preferences'
+import type { WeekStart } from '../calendar/date'
+import { setBedtime, setBedtimeResidualTargetMg, setCaffeineAxisFontSize, setCaffeineHalfLifeHours, setWeekStartsOn, useBedtime, useBedtimeResidualTargetMg, useCaffeineAxisFontSize, useCaffeineHalfLifeHours, useWeekStartsOn } from './preferences'
 import './settings.css'
+import './settings-calendar.css'
 
 export function SettingsPage() {
   const axisFontSize = useCaffeineAxisFontSize()
   const bedtime = useBedtime()
   const halfLifeHours = useCaffeineHalfLifeHours()
   const bedtimeResidualTargetMg = useBedtimeResidualTargetMg()
+  const weekStartsOn = useWeekStartsOn()
   return <div className="page settings-page">
     <div className="eyebrow">Preferences</div>
     <h1 className="page-title">Settings</h1>
     <section className="card settings-section">
+      <div><h2>Calendar</h2><p>Choose which day appears first in every Calendar week.</p></div>
+      <label className="value-setting">
+        <span>Week starts on</span>
+        <select value={weekStartsOn} onChange={event => setWeekStartsOn(Number(event.target.value) as WeekStart)}><option value={1}>Monday</option><option value={0}>Sunday</option></select>
+        <small>Updates the Calendar immediately on this device.</small>
+      </label>
+      <hr />
       <div><h2>Sleep & caffeine</h2><p>Used for residual estimates and the recommended caffeine cutoff.</p></div>
       <label className="value-setting">
         <span>Regular bedtime</span>

@@ -1,0 +1,15 @@
+.shell{--studyos-sidebar-width:232px;transition:grid-template-columns .28s cubic-bezier(.22,1,.36,1)}
+.shell.calendar-tools-active{grid-template-columns:minmax(0,1fr)}
+.shell.sidebar-collapsed{grid-template-columns:82px minmax(0,1fr)}
+.shell>.sidebar{width:var(--studyos-sidebar-width);animation:main-sidebar-in .28s cubic-bezier(.22,1,.36,1)}
+.sidebar-head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:28px}
+.sidebar-head .brand{min-width:0;padding:0}
+.sidebar-directions{display:flex;align-items:center;gap:2px}
+.sidebar-directions button{display:grid;place-items:center;width:27px;height:30px;padding:0;border:0;border-radius:7px;color:var(--muted);background:transparent}
+.sidebar-directions button:hover{color:var(--accent);background:var(--surface-muted)}
+.sidebar-directions svg{width:16px}
+.sidebar-collapsed .sidebar{width:82px;padding-inline:12px;transition:width .28s cubic-bezier(.22,1,.36,1),padding .28s cubic-bezier(.22,1,.36,1)}
+.sidebar-collapsed .sidebar-head{justify-content:center;gap:2px}
+.sidebar-collapsed .brand-mark{width:25px;flex:0 0 25px}
+@media(max-width:760px){.shell.sidebar-collapsed{display:block}}
+@keyframes main-sidebar-in{from{opacity:.35;transform:translateX(-22px)}to{opacity:1;transform:translateX(0)}}

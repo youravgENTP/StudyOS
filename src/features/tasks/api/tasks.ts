@@ -1,6 +1,6 @@
 import { dataApi } from '../../../lib/neon/data'
 import { completionPatch, validateProjectInput, validateTaskInput, validateWorkstreamInput } from '../model'
-import type { PlanningEntity, Project, ProjectInput, Subject, Task, TaskInput, TaskStatus, Workstream, WorkstreamInput } from '../types'
+import type { AcademicTerm, PlanningEntity, Project, ProjectInput, Subject, Task, TaskInput, TaskStatus, Workstream, WorkstreamInput } from '../types'
 
 const CHANGED = 'studyos:tasks-changed'
 export const notifyTasksChanged = () => window.dispatchEvent(new Event(CHANGED))
@@ -12,7 +12,7 @@ function failure(operation: string, error: unknown) {
 }
 
 function mapSubject(row: Record<string, unknown>): Subject {
-  return { id: String(row.id), name: String(row.name), color: String(row.color), archivedAt: row.archived_at ? String(row.archived_at) : null }
+  return { id: String(row.id), name: String(row.name), color: String(row.color), academicYear: Number(row.academic_year ?? 2026), academicTerm: (row.academic_term ?? '2') as AcademicTerm, archivedAt: row.archived_at ? String(row.archived_at) : null }
 }
 
 function mapBase(row: Record<string, unknown>): PlanningEntity {
@@ -48,31 +48,31 @@ export async function listProjects(): Promise<Project[]> {
 }
 
 export async function listWorkstreams(): Promise<Workstream[]> {
-  const { data, error } = await dataApi.from('workstreams').select('id,project_id,subject_id,title,description,category,start_date,due_date,status,is_dday,position,completed_at,created_at,subjects(id,name,color,archived_at)').order('position')
+  const { data, error } = await dataApi.from('workstreams').select('id,project_id,subject_id,title,description,category,start_date,due_date,status,is_dday,show_on_calendar,position,completed_at,created_at,subjects(id,name,color,academic_year,academic_term,archived_at)').order('position')
   if (error) throw failure('load workstreams', error)
   return (data ?? []).map(row => {
     const record = row as Record<string, unknown>
     const relation = Array.isArray(record.subjects) ? record.subjects[0] : record.subjects
-    return { ...mapBase(record), projectId: String(record.project_id), subjectId: record.subject_id ? String(record.subject_id) : null, subject: relation ? mapSubject(relation as Record<string, unknown>) : null }
+    return { ...mapBase(record), projectId: String(record.project_id), subjectId: record.subject_id ? String(record.subject_id) : null, subject: relation ? mapSubject(relation as Record<string, unknown>) : null, showOnCalendar: record.show_on_calendar !== false }
   })
 }
 
 export async function listTasks(): Promise<Task[]> {
-  const { data, error } = await dataApi.from('tasks').select('id,project_id,workstream_id,title,description,category,start_date,due_date,status,is_dday,position,completed_at,created_at').order('position')
+  const { data, error } = await dataApi.from('tasks').select('id,project_id,workstream_id,title,description,category,start_date,due_date,status,is_dday,show_on_calendar,is_deadline,position,completed_at,created_at').order('position')
   if (error) throw failure('load tasks', error)
-  return (data ?? []).map(row => { const record = row as Record<string, unknown>; return { ...mapBase(record), projectId: String(record.project_id), workstreamId: record.workstream_id ? String(record.workstream_id) : null } })
+  return (data ?? []).map(row => { const record = row as Record<string, unknown>; return { ...mapBase(record), projectId: String(record.project_id), workstreamId: record.workstream_id ? String(record.workstream_id) : null, showOnCalendar: record.show_on_calendar !== false, isDeadline: Boolean(record.is_deadline) } })
 }
 
 export async function listSubjects(includeArchived = false) {
-  let query = dataApi.from('subjects').select('id,name,color,archived_at').order('name')
+  let query = dataApi.from('subjects').select('id,name,color,academic_year,academic_term,archived_at').order('academic_year', { ascending: false }).order('academic_term', { ascending: false }).order('name')
   if (!includeArchived) query = query.is('archived_at', null)
   const { data, error } = await query
   if (error) throw failure('load subjects', error)
   return (data ?? []).map(row => mapSubject(row as Record<string, unknown>))
 }
 
-export async function createSubject(name: string, color: string) { const { error } = await dataApi.from('subjects').insert({ name: name.trim(), color }); if (error) throw failure('create subject', error); notifyTasksChanged() }
-export async function updateSubject(id: string, name: string, color: string) { const { error } = await dataApi.from('subjects').update({ name: name.trim(), color }).eq('id', id); if (error) throw failure('update subject', error); notifyTasksChanged() }
+export async function createSubject(name: string, color: string, academicYear: number, academicTerm: AcademicTerm) { const { error } = await dataApi.from('subjects').insert({ name: name.trim(), color, academic_year: academicYear, academic_term: academicTerm }); if (error) throw failure('create subject', error); notifyTasksChanged() }
+export async function updateSubject(id: string, name: string, color: string, academicYear: number, academicTerm: AcademicTerm) { const { error } = await dataApi.from('subjects').update({ name: name.trim(), color, academic_year: academicYear, academic_term: academicTerm }).eq('id', id); if (error) throw failure('update subject', error); notifyTasksChanged() }
 export async function archiveSubject(id: string) { const { error } = await dataApi.from('subjects').update({ archived_at: new Date().toISOString() }).eq('id', id); if (error) throw failure('archive subject', error); notifyTasksChanged() }
 
 export async function createProject(input: ProjectInput) {
@@ -85,10 +85,10 @@ export async function deleteProject(id: string) { const { error } = await dataAp
 
 export async function createWorkstream(input: WorkstreamInput) {
   const invalid = validateWorkstreamInput(input); if (invalid) throw new Error(invalid)
-  const { error } = await dataApi.from('workstreams').insert({ ...values(input), project_id: input.projectId, subject_id: input.subjectId, position: await nextPosition('workstreams', [{ column: 'project_id', value: input.projectId }]) })
+  const { error } = await dataApi.from('workstreams').insert({ ...values(input), project_id: input.projectId, subject_id: input.subjectId, show_on_calendar: input.showOnCalendar, position: await nextPosition('workstreams', [{ column: 'project_id', value: input.projectId }]) })
   if (error) throw failure('create workstream', error); notifyTasksChanged()
 }
-export async function updateWorkstream(id: string, input: WorkstreamInput) { const invalid = validateWorkstreamInput(input); if (invalid) throw new Error(invalid); const { error } = await dataApi.from('workstreams').update({ ...values(input), project_id: input.projectId, subject_id: input.subjectId }).eq('id', id); if (error) throw failure('update workstream', error); notifyTasksChanged() }
+export async function updateWorkstream(id: string, input: WorkstreamInput) { const invalid = validateWorkstreamInput(input); if (invalid) throw new Error(invalid); const { error } = await dataApi.from('workstreams').update({ ...values(input), project_id: input.projectId, subject_id: input.subjectId, show_on_calendar: input.showOnCalendar }).eq('id', id); if (error) throw failure('update workstream', error); notifyTasksChanged() }
 export async function deleteWorkstream(id: string) { const { error } = await dataApi.from('workstreams').delete().eq('id', id); if (error) throw failure('delete workstream', error); notifyTasksChanged() }
 
 export async function createTask(input: TaskInput) {
@@ -96,10 +96,10 @@ export async function createTask(input: TaskInput) {
   const filters = input.workstreamId
     ? [{ column: 'workstream_id' as const, value: input.workstreamId }]
     : [{ column: 'project_id' as const, value: input.projectId }, { column: 'workstream_id' as const, value: null }]
-  const { error } = await dataApi.from('tasks').insert({ ...values(input), project_id: input.projectId, workstream_id: input.workstreamId, position: await nextPosition('tasks', filters) })
+  const { error } = await dataApi.from('tasks').insert({ ...values(input), project_id: input.projectId, workstream_id: input.workstreamId, show_on_calendar: input.showOnCalendar, is_deadline: input.isDeadline, position: await nextPosition('tasks', filters) })
   if (error) throw failure('create task', error); notifyTasksChanged()
 }
-export async function updateTask(id: string, input: TaskInput) { const invalid = validateTaskInput(input); if (invalid) throw new Error(invalid); const { error } = await dataApi.from('tasks').update({ ...values(input), project_id: input.projectId, workstream_id: input.workstreamId }).eq('id', id); if (error) throw failure('update task', error); notifyTasksChanged() }
+export async function updateTask(id: string, input: TaskInput) { const invalid = validateTaskInput(input); if (invalid) throw new Error(invalid); const { error } = await dataApi.from('tasks').update({ ...values(input), project_id: input.projectId, workstream_id: input.workstreamId, show_on_calendar: input.showOnCalendar, is_deadline: input.isDeadline }).eq('id', id); if (error) throw failure('update task', error); notifyTasksChanged() }
 export async function deleteTask(id: string) { const { error } = await dataApi.from('tasks').delete().eq('id', id); if (error) throw failure('delete task', error); notifyTasksChanged() }
 
 export async function setEntityStatus(table: 'projects' | 'workstreams' | 'tasks', id: string, status: TaskStatus) { const patch = completionPatch(status); const { error } = await dataApi.from(table).update({ status: patch.status, completed_at: patch.completedAt }).eq('id', id); if (error) throw failure('update status', error); notifyTasksChanged() }

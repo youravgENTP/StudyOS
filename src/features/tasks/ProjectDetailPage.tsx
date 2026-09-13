@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronLeft, ChevronUp, Pencil, Pin, Plus } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
-import { reorderEntities, setEntityDday, setEntityStatus } from './api/tasks'
+import { reorderEntities, setEntityDday, setEntityStatus, setTaskCompleted } from './api/tasks'
 import { EntityEditor } from './components/EntityEditor'
 import { PortfolioTimeline } from './components/PortfolioTimeline'
 import { dateWarnings, projectProgress, workstreamProgress } from './model'
@@ -24,8 +24,9 @@ function StatusControl({ table, entity }: { table: 'projects' | 'workstreams' | 
 function TaskLine({ task, siblings, project, workstream, onEdit }: { task: Task; siblings: Task[]; project: Project; workstream?: Workstream | null; onEdit: () => void }) {
   const warnings = dateWarnings(task, project, workstream)
   return <div className={`project-task-line ${task.status}`}>
+    <input className="task-completion" type="checkbox" checked={task.status === 'done'} onChange={event => void setTaskCompleted(task.id, event.target.checked)} aria-label={`Mark ${task.title} ${task.status === 'done' ? 'incomplete' : 'complete'}`} />
     <OrderButtons items={siblings} item={task} table="tasks" />
-    <div><strong>{task.title}</strong><small>{dateText(task)} · {task.category}</small>{warnings.map(warning => <span className="date-warning" key={warning}>{warning}</span>)}</div>
+    <div><strong>{task.title}</strong><small>{dateText(task)} · {task.category}{task.isDeadline ? ' · Timeline deadline' : ''}</small>{warnings.map(warning => <span className="date-warning" key={warning}>{warning}</span>)}</div>
     <StatusControl table="tasks" entity={task} />
     <button className={task.isDday ? 'active pin-button' : 'pin-button'} onClick={() => void setEntityDday('tasks', task.id, !task.isDday)} aria-label="Toggle D-Day"><Pin /></button>
     <button onClick={onEdit} aria-label={`Edit ${task.title}`}><Pencil /></button>

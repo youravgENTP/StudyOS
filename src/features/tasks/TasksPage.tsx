@@ -21,11 +21,11 @@ export function TasksPage() {
       <div><div className="eyebrow">Long-range planning</div><h1 className="page-title">Portfolio</h1></div>
       <div className="tasks-toolbar">
         <div className="portfolio-filter"><button className={filter === 'active' ? 'active' : ''} onClick={() => setFilter('active')}>Active</button><button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>All</button></div>
-        <button className="button" onClick={() => setSubjectsOpen(value => !value)}><SlidersHorizontal size={15} /> Subjects</button>
+        <button className="button" onClick={() => setSubjectsOpen(true)}><SlidersHorizontal size={15} /> Subjects</button>
         <button className="button primary" onClick={() => setEditor({ kind: 'project' })}><Plus size={16} /> Project</button>
       </div>
     </div>
-    {subjectsOpen && <div className="subjects-inline"><SubjectManager subjects={subjects} /></div>}
+    {subjectsOpen && <SubjectManager subjects={subjects} onClose={() => setSubjectsOpen(false)} />}
     {error && <div className="feature-error">{error}</div>}
     <section className="card portfolio-card">
       {loading ? <p className="empty-copy">Loading portfolio…</p> : visibleProjects.length
