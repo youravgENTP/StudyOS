@@ -44,7 +44,7 @@
 .dashboard-quote-card .card-head>div:last-child{display:flex;align-items:center;gap:10px}
 .dashboard-quote-card .card-head button{display:grid;place-items:center;width:26px;height:26px;padding:0;border:0;border-radius:7px;color:var(--muted);background:var(--surface-muted)}
 .dashboard-quote-card .card-head button svg{width:13px}
-.dashboard-quote-card blockquote{margin:0;color:var(--text);font-size:18px;font-weight:620;line-height:1.55}
+.dashboard-quote-card blockquote{margin:0;white-space:pre-line;color:var(--text);font-size:18px;font-weight:620;line-height:1.55}
 .dashboard-quote-card>p{margin:10px 0 0;color:var(--muted);font-size:11px}
 .upcoming{display:grid;grid-template-columns:1fr auto;gap:5px 14px;padding:12px 0;border-top:1px solid var(--border)}
 .upcoming:first-child{border-top:0}

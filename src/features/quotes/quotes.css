@@ -25,13 +25,13 @@
 .quotes-search .button svg{width:15px}
 .quotes-search span{color:var(--muted);font-size:11px}
 .quote-pick{padding:22px;border-left:3px solid var(--quote-pick-color);border-radius:0 10px 10px 0;background:color-mix(in srgb,var(--quote-pick-color) 8%,var(--surface))}
-.quote-pick blockquote{margin:0;font-size:18px;font-weight:620;line-height:1.55}
+.quote-pick blockquote{margin:0;white-space:pre-line;font-size:18px;font-weight:620;line-height:1.55}
 .quote-pick p{margin:8px 0 0;color:var(--muted);font-size:11px}
 .quote-list{display:grid;gap:10px}
 .quote-row{display:grid;grid-template-columns:8px minmax(0,1fr) 24px 28px 28px;align-items:center;gap:12px;padding:17px 18px}
 .quote-row.inactive{opacity:.48}
 .quote-row>i{width:8px;height:42px;border-radius:5px}
-.quote-row blockquote{margin:0;color:var(--text);font-size:15px;line-height:1.5}
+.quote-row blockquote{margin:0;white-space:pre-line;color:var(--text);font-size:15px;line-height:1.5}
 .quote-row p{margin:5px 0 0;color:var(--muted);font-size:11px}
 .quote-row>button{display:grid;place-items:center;padding:0;border:0;color:var(--muted);background:none}
 .quote-row>button svg,.quote-favorite{width:15px}
