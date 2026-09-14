@@ -8,6 +8,7 @@ import { calculateLatestAllowableIntakeTime, GENERIC_SHOT_MG, nextBedtimeAt, tot
 import type { CaffeinePreset, CaffeinePresetInput } from './types'
 import { useCaffeine } from './useCaffeine'
 import { useBedtime, useBedtimeResidualTargetMg, useCaffeineAxisFontSize, useCaffeineHalfLifeHours } from '../settings/preferences'
+import { useMediaQuery } from '../../hooks/useMediaQuery'
 import './caffeine.css'
 import './presets.css'
 import './caffeine-header.css'
@@ -23,6 +24,7 @@ const readableDate = (key: string) => new Intl.DateTimeFormat('ko-KR', { year: '
 const LOWER_SPLIT_KEY = 'studyos:caffeine-lower-split'
 
 export function CaffeinePage() {
+  const mobile = useMediaQuery('(max-width: 760px)')
   const { intakes, presets, loading, error } = useCaffeine()
   const axisFontSize = useCaffeineAxisFontSize()
   const bedtimeSetting = useBedtime()
@@ -34,7 +36,7 @@ export function CaffeinePage() {
   const [formError, setFormError] = useState('')
   const [editor, setEditor] = useState<CaffeinePreset | null | undefined>(undefined)
   const [logDate, setLogDate] = useState(() => dateKey(new Date()))
-  const [lowerSplit, setLowerSplit] = useState(() => { const stored = Number(localStorage.getItem(LOWER_SPLIT_KEY)); return Number.isFinite(stored) && stored >= 55 && stored <= 75 ? stored : 67 })
+  const [lowerSplit, setLowerSplit] = useState(() => { const stored = Number(localStorage.getItem(LOWER_SPLIT_KEY)); return Number.isFinite(stored) && stored >= 55 && stored <= 75 ? stored : 60 })
   const lowerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -129,7 +131,7 @@ export function CaffeinePage() {
       {error && <p className="feature-error">{error}</p>}
     </section>
 
-    <div className="caffeine-lower" ref={lowerRef} style={{ gridTemplateColumns: `minmax(0, ${lowerSplit}fr) 10px minmax(0, ${100 - lowerSplit}fr)` } as CSSProperties}>
+    <div className="caffeine-lower" ref={lowerRef} style={mobile ? undefined : { gridTemplateColumns: `minmax(0, ${lowerSplit}fr) 10px minmax(0, ${100 - lowerSplit}fr)` } as CSSProperties}>
       <section className="card preset-panel">
         <div className="card-head">
           <div><h2>Add Intake Record</h2><span className="meta">Tap a preset to record it immediately</span></div>
@@ -148,7 +150,7 @@ export function CaffeinePage() {
         </div>
         {formError && <p className="form-error">{formError}</p>}
       </section>
-      <button className="caffeine-resizer" role="separator" aria-label="Resize preset and intake log panels" aria-orientation="vertical" aria-valuemin={55} aria-valuemax={75} aria-valuenow={Math.round(lowerSplit)} onPointerDown={event => event.currentTarget.setPointerCapture(event.pointerId)} onPointerMove={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) resizeLower(event) }} onKeyDown={resizeLowerWithKeyboard}><i /></button>
+      {!mobile && <button className="caffeine-resizer" role="separator" aria-label="Resize preset and intake log panels" aria-orientation="vertical" aria-valuemin={55} aria-valuemax={75} aria-valuenow={Math.round(lowerSplit)} onPointerDown={event => event.currentTarget.setPointerCapture(event.pointerId)} onPointerMove={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) resizeLower(event) }} onKeyDown={resizeLowerWithKeyboard}><i /></button>}
       <section className="card">
         <div className="card-head intake-log-head"><div><h2>Intake Log</h2><span className="meta">{logDate === todayKey ? 'Today' : readableDate(logDate)} · {selectedTotal.toFixed(1)} mg</span></div><div className="log-date-nav"><button onClick={() => setLogDate(shiftDateKey(logDate, -1))} aria-label="Previous day"><ChevronLeft /></button><span>{readableDate(logDate)}</span><label aria-label="Choose log date"><CalendarDays /><input type="date" value={logDate} max={todayKey} onChange={event => setLogDate(event.target.value)} /></label><button disabled={logDate >= todayKey} onClick={() => setLogDate(shiftDateKey(logDate, 1))} aria-label="Next day"><ChevronRight /></button></div></div>
         <div className="intake-list">
