@@ -9,6 +9,7 @@ import type { CaffeinePreset, CaffeinePresetInput } from './types'
 import { useCaffeine } from './useCaffeine'
 import { useBedtime, useBedtimeResidualTargetMg, useCaffeineAxisFontSize, useCaffeineHalfLifeHours } from '../settings/preferences'
 import { useMediaQuery } from '../../hooks/useMediaQuery'
+import { MedicationPanel } from '../dosage/MedicationPanel'
 import './caffeine.css'
 import './presets.css'
 import './caffeine-header.css'
@@ -113,7 +114,7 @@ export function CaffeinePage() {
 
   return <div className="page caffeine-page">
     <header className="caffeine-heading">
-      <div><div className="eyebrow">Intake and decay estimate</div><h1 className="page-title">Caffeine intake</h1></div>
+      <div><div className="eyebrow">Caffeine and medication records</div><h1 className="page-title">Dosage intake</h1></div>
       <div className="caffeine-header-summary">
         <div className="summary-metric current"><strong className="tabular">{Math.round(current)}</strong><span>mg</span><small>Now</small></div>
         {bedtime && bedtimeLoad !== null
@@ -163,6 +164,7 @@ export function CaffeinePage() {
       </section>
     </div>
 
+    <MedicationPanel />
     <p className="caffeine-disclaimer">This is an estimated remaining body load based on intake and an average half-life, not a blood measurement or medical assessment.</p>
     {overrideIds.length > 0 && <button className="restore-presets" onClick={() => void restoreBuiltInCaffeinePresets(overrideIds)}><RotateCcw /> Restore default presets</button>}
     {editor !== undefined && <PresetEditor preset={editor} onClose={() => setEditor(undefined)} />}

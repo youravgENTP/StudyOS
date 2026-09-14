@@ -27,7 +27,7 @@ export function DashboardCaffeineCard() {
   const bedtimeLoad = bedtime ? totalLoadAt(intakes, bedtime, halfLifeHours) : null
 
   return <section className="card caffeine-card">
-    <div className="card-head"><h2>Caffeine intake</h2><Link className="meta" to="/caffeine">Details</Link></div>
+    <div className="card-head"><h2>Caffeine intake</h2><Link className="meta" to="/dosage">Details</Link></div>
     <div className="metric tabular">{Math.round(current)} <small>mg now</small></div>
     {bedtime && bedtimeLoad !== null
       ? <><div className="metric-note"><strong>{Math.round(bedtimeLoad)} mg</strong> at bedtime {clock(bedtime)}</div><div className="metric-note">{cutoff ? <>Latest {referencePreset.caffeineMg} mg <strong className="tabular">{datedClock(cutoff)}</strong></> : 'No additional caffeine fits the bedtime target'}</div></>

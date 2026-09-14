@@ -11,6 +11,8 @@
     {"id":"quotes","type":"feature","title":"Quotes","summary":"Categorized quotation CRUD with a daily Dashboard projection.","doc":"features/quotes.md","position":{"x":290,"y":1120}},
     {"id":"settings","type":"feature","title":"Settings","summary":"Device-local preferences and the timetable import entry point.","doc":"features/settings.md","position":{"x":290,"y":1190}},
     {"id":"timetable-import","type":"feature","title":"Timetable Import","summary":"Validates inyak-planner JSON and imports Subjects plus weekly class blocks transactionally.","doc":"features/timetable-import.md","position":{"x":290,"y":1320}},
+    {"id":"stats","type":"feature","title":"Stats","summary":"Publishes timetable-aware study capacity and bounded Caffeine history.","doc":"features/stats.md","position":{"x":290,"y":1450}},
+    {"id":"dosage","type":"feature","title":"Dosage","summary":"Tracks Caffeine plus evidence-backed medication reference and administration records.","doc":"features/dosage.md","position":{"x":290,"y":1580}},
     {"id":"neon-backend","type":"service","title":"Neon Backend","summary":"Groups the Auth, Data API, and RLS-backed Postgres boundary.","doc":"services/neon-backend.md","position":{"x":580,"y":20}},
     {"id":"neon-auth","type":"service","title":"Neon Auth","summary":"Owns real user sessions and provides authenticated JWTs.","doc":"services/neon-auth.md","position":{"x":580,"y":170}},
     {"id":"neon-data-api","type":"service","title":"Neon Data API","summary":"Carries authenticated PostgREST-compatible queries to Postgres.","doc":"services/neon-data-api.md","position":{"x":870,"y":170}},
@@ -25,6 +27,7 @@
     {"id":"caffeine-tables","type":"database","title":"caffeine intakes & presets","summary":"Dose history plus reusable owner-defined drink and tablet presets.","doc":"database/initial-model.md","position":{"x":1160,"y":1100}},
     {"id":"quote-tables","type":"database","title":"quote categories & quotes","summary":"Owner-managed categorized quotations and Dashboard eligibility.","doc":"database/initial-model.md","position":{"x":1160,"y":1220}},
     {"id":"timetable-tables","type":"database","title":"timetables, courses & meetings","summary":"Imported semester identity, Subject-linked courses, and normalized weekly meeting blocks.","doc":"database/initial-model.md","position":{"x":1160,"y":1360}},
+    {"id":"dosage-tables","type":"database","title":"dosage catalog, PK & intakes","summary":"Read-only medication references and owner-only administration snapshots.","doc":"database/initial-model.md","position":{"x":1160,"y":1500}},
     {"id":"vercel-deployment","type":"service","title":"Vercel Deployment","summary":"Hosts the StudyOS PWA over HTTPS for Mac and iPhone access.","doc":"services/vercel-deployment.md","position":{"x":0,"y":-100}}
   ],
   "edges": [
@@ -44,6 +47,11 @@
     {"id":"timetable-data-api","from":"timetable-import","to":"neon-data-api","label":"transactional RPC","summary":"A validated payload is imported through one authenticated database function."},
     {"id":"data-api-timetables","from":"neon-data-api","to":"timetable-tables","label":"owner-only RLS","summary":"Imported timetable, course, and meeting records are available only to their owner."},
     {"id":"timetable-subjects","from":"timetable-tables","to":"subjects-table","label":"reuses","summary":"Each imported course references an existing or newly created StudyOS Subject."},
+    {"id":"stats-sessions","from":"stats","to":"study-sessions","label":"aggregates","summary":"Stats attributes recorded duration to local calendar days and compares it with available minutes."},
+    {"id":"stats-timetable","from":"stats","to":"timetable-tables","label":"subtracts classes","summary":"Imported weekly class meetings reduce the fixed waking window after overlaps are merged."},
+    {"id":"stats-caffeine","from":"stats","to":"caffeine-tables","label":"aggregates","summary":"Stats summarizes bounded Caffeine dose and time records without causal claims."},
+    {"id":"dosage-data-api","from":"dosage","to":"neon-data-api","label":"reference read and CRUD","summary":"Dosage reads system reference profiles and writes owner-only administrations."},
+    {"id":"data-api-dosage","from":"neon-data-api","to":"dosage-tables","label":"RLS query","summary":"Reference profiles are authenticated read-only while administration rows are owner-only."},
     {"id":"shell-auth","from":"application-shell","to":"neon-auth","label":"observes session","summary":"The root Auth provider makes the current Neon session available to application UI."},
     {"id":"auth-data-api","from":"neon-auth","to":"neon-data-api","label":"supplies JWT","summary":"The shared Neon client automatically attaches the current Auth JWT to Data API requests."},
     {"id":"backend-auth","from":"neon-backend","to":"neon-auth","label":"provides","summary":"Managed Better Auth is the identity service within the Neon backend."},

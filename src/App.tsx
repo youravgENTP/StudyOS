@@ -5,8 +5,8 @@ import { CaffeinePage } from './features/caffeine/CaffeinePage'
 import { DashboardPage } from './features/dashboard/DashboardPage'
 import { HabitsPage } from './features/habits/HabitsPage'
 import { RoutinePage } from './features/routine/RoutinePage'
-import { PlaceholderPage } from './features/shared/PlaceholderPage'
 import { SettingsPage } from './features/settings/SettingsPage'
+import { StatsPage } from './features/stats/StatsPage'
 import { TasksPage } from './features/tasks/TasksPage'
 import { ProjectDetailPage } from './features/tasks/ProjectDetailPage'
 import { SchedulesPage } from './features/schedules/SchedulesPage'
@@ -20,14 +20,15 @@ export default function App() {
         <Route index element={<DashboardPage />} />
         <Route path="calendar" element={<CalendarPage />} />
         <Route path="schedules" element={<SchedulesPage />} />
-        <Route path="caffeine" element={<CaffeinePage />} />
+        <Route path="dosage" element={<CaffeinePage />} />
+        <Route path="caffeine" element={<Navigate to="/dosage" replace />} />
         <Route path="tasks" element={<TasksPage />} />
         <Route path="tasks/:projectId" element={<ProjectDetailPage />} />
         <Route path="routine" element={<RoutinePage />} />
         <Route path="habits" element={<HabitsPage />} />
         <Route path="quotes" element={<QuotesPage />} />
 
-        <Route path="stats" element={<PlaceholderPage title="Stats" />} />
+        <Route path="stats" element={<StatsPage />} />
         <Route path="settings" element={<SettingsPage />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
