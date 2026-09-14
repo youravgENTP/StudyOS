@@ -1,4 +1,5 @@
 import type { WeekStart } from '../calendar/date'
+import { TimetableImportCard } from '../timetable/TimetableImportCard'
 import { setBedtime, setBedtimeResidualTargetMg, setCaffeineAxisFontSize, setCaffeineHalfLifeHours, setWeekStartsOn, useBedtime, useBedtimeResidualTargetMg, useCaffeineAxisFontSize, useCaffeineHalfLifeHours, useWeekStartsOn } from './preferences'
 import './settings.css'
 import './settings-calendar.css'
@@ -12,6 +13,7 @@ export function SettingsPage() {
   return <div className="page settings-page">
     <div className="eyebrow">Preferences</div>
     <h1 className="page-title">Settings</h1>
+    <TimetableImportCard />
     <section className="card settings-section">
       <div><h2>Calendar</h2><p>Choose which day appears first in every Calendar week.</p></div>
       <label className="value-setting">
