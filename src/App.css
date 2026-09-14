@@ -56,6 +56,7 @@
 .placeholder{max-width:650px}
 .placeholder p{line-height:1.65;color:var(--muted)}
 .mobile-nav{display:none}
+.mobile-more-backdrop{display:none}
 @media(max-width:760px){.shell{display:block}
 .sidebar{display:none}
 .main{padding:24px 16px 92px}
@@ -73,4 +74,51 @@
 .timer-controls .button{flex:1;padding-inline:8px}
 .mobile-nav{position:fixed;z-index:10;inset:auto 0 0;display:flex;justify-content:space-around;padding:8px 5px max(8px,env(safe-area-inset-bottom));border-top:1px solid var(--border);background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(12px)}
 .mobile-nav .nav-link{min-height:50px;flex-direction:column;gap:3px;padding:4px 9px;font-size:10px}
+.mobile-nav .mobile-more-button{flex:1;justify-content:center;border:0;background:transparent}
+.mobile-more-backdrop{position:fixed;z-index:80;inset:0;display:flex;align-items:flex-end;background:rgb(0 0 0/.5);backdrop-filter:blur(3px)}
+.mobile-more-sheet{width:100%;padding:22px 18px max(22px,env(safe-area-inset-bottom));border-radius:20px 20px 0 0;background:var(--surface);box-shadow:0 -18px 60px rgb(0 0 0/.3)}
+.mobile-more-sheet>header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.mobile-more-sheet>header>div{display:grid;gap:2px}
+.mobile-more-sheet>header span{color:var(--muted);font-size:12px}
+.mobile-more-sheet>header button{display:grid;place-items:center;width:44px;height:44px;border:0;border-radius:50%;color:var(--muted);background:var(--surface-muted)}
+.mobile-more-sheet>header svg{width:18px}
+.mobile-more-sheet nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.mobile-more-sheet .nav-link{min-height:52px;background:var(--surface-muted)}
+.mobile-more-sheet .nav-link.active{background:var(--accent-soft)}
+}
+
+@media(max-width:760px){
+.mobile-dashboard .page-title{margin-bottom:18px}
+.mobile-dashboard-stack{display:grid;gap:14px}
+.mobile-dashboard-stack .card{padding:17px}
+.mobile-dashboard-stack .card-head{margin-bottom:15px}
+.mobile-dashboard-stack .study-card{border-color:color-mix(in srgb,var(--accent) 42%,var(--border));background:linear-gradient(145deg,color-mix(in srgb,var(--accent-soft) 55%,var(--surface)),var(--surface) 72%)}
+.mobile-dashboard-stack .timer-value{margin:0 0 18px;font-size:46px}
+.mobile-dashboard-stack .button{min-height:44px}
+.mobile-dashboard-stack .task{min-height:52px;align-items:center;padding:9px 0}
+.mobile-dashboard-stack .task input{flex:0 0 auto;width:21px;height:21px;margin:0}
+.mobile-today-card .task-path{margin-bottom:4px}
+.mobile-pinned-deadlines{display:grid;gap:2px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.mobile-pinned-deadlines>.dashboard-card-caption{margin:0 0 5px;text-transform:uppercase;letter-spacing:.04em}
+.mobile-pinned-deadlines a{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;min-height:42px;font-size:12px}
+.mobile-pinned-deadlines a span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mobile-pinned-deadlines a b{color:var(--danger)}
+.mobile-dashboard .routine-card{padding-block:15px}
+.mobile-dashboard .routine-card .card-head{margin-bottom:12px}
+.mobile-dashboard .upcoming-card.compact .upcoming{min-height:56px}
+.mobile-dashboard-statuses{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.mobile-dashboard-statuses .card{min-width:0;padding:15px}
+.mobile-dashboard-statuses .card-head{align-items:flex-start;gap:8px;margin-bottom:12px}
+.mobile-dashboard-statuses .card-head .meta{font-size:10px}
+.mobile-dashboard-statuses .metric{font-size:28px}
+.mobile-dashboard-statuses .metric small{display:block;margin-top:3px;font-size:11px}
+.mobile-dashboard-statuses .metric-note{overflow:hidden;margin-top:6px;font-size:10px;line-height:1.35}
+.mobile-dashboard-statuses .metric-note:last-child{display:none}
+.mobile-dashboard-statuses .summary-row{display:grid;gap:8px;margin:0}
+.mobile-dashboard-statuses .summary-row .meta{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}
+.mobile-dashboard-statuses .summary-row strong{font-size:25px}
+.mobile-dashboard .dashboard-quote-card{border:0;border-top:1px solid var(--border);border-radius:0;padding:18px 3px;background:transparent;box-shadow:none}
+.mobile-dashboard .dashboard-quote-card .card-head{margin-bottom:12px}
+.mobile-dashboard .dashboard-quote-card blockquote{font-size:15px;font-weight:560}
+.mobile-dashboard .dashboard-quote-card .card-head button{width:44px;height:44px}
 }
