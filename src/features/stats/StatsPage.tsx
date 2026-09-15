@@ -4,6 +4,7 @@ import { formatMinutes } from '../timetable/model'
 import { academicTermLabels } from '../tasks/types'
 import { loadStatsSource } from './api'
 import { averageDailyClock, buildDailyStats, dateRangeEndingAt, formatClockMinute } from './model'
+import { StudySessionHistory } from './StudySessionHistory'
 import type { StatsSourceData } from './types'
 import './stats.css'
 
@@ -47,6 +48,11 @@ export function StatsPage() {
         <div className="stats-section-title"><div><h2>Study capacity</h2><p>07:00–24:00에서 시간표 수업을 제외한 시간과 실제 StudyOS 공부 기록을 비교합니다.</p></div></div>
         <div className="stats-metrics"><article className="card"><small>가용시간</small><strong>{formatMinutes(available)}</strong></article><article className="card"><small>기록된 공부</small><strong>{studyDuration(studied)}</strong></article><article className="card"><small>가용시간 활용률</small><strong>{utilization.toFixed(1)}%</strong></article><article className="card"><small>공부한 날짜</small><strong>{daily.filter(day => day.studySeconds > 0).length}일</strong></article></div>
         <section className="card capacity-chart"><div className="card-head"><h2>일별 가용시간과 공부시간</h2><span className="meta">{shortDate(days[0])}–{shortDate(days.at(-1)!)}</span></div><div className="capacity-bars">{daily.map(day => { const studyMinutes = day.studySeconds / 60; return <div className="capacity-day" key={day.key} title={`${day.key}: ${formatMinutes(day.availableMinutes)} 중 ${studyDuration(day.studySeconds)} 공부`}><div className="capacity-track"><i style={{ height: `${day.availableMinutes / maxCapacity * 100}%` }} /><b style={{ height: `${Math.min(studyMinutes / maxCapacity * 100, 100)}%` }} /></div><small>{new Intl.DateTimeFormat('ko', { weekday: 'narrow' }).format(day.date)}</small><span>{day.date.getDate()}</span></div>})}</div><div className="stats-legend"><span><i className="available" />가용시간</span><span><i className="studied" />공부시간</span></div></section>
+        <StudySessionHistory sessions={source.sessions} onUpdated={session => setSource(current => {
+          const from = new Date(days[0]); from.setHours(0, 0, 0, 0)
+          const to = new Date(days.at(-1)!); to.setDate(to.getDate() + 1); to.setHours(0, 0, 0, 0)
+          return { ...current, sessions: current.sessions.map(item => item.id === session.id ? session : item).filter(item => { const endedAt = new Date(item.endedAt); return endedAt >= from && endedAt < to }) }
+        })} />
       </section>
 
       <section className="stats-section">

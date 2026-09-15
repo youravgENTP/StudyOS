@@ -21,7 +21,7 @@ test('07:00–24:00 capacity subtracts merged timetable meetings', () => {
 
 test('daily comparison keeps recorded study time independent from capacity', () => {
   const monday = new Date('2026-09-14T12:00:00')
-  const stats = buildDailyStats([monday], timetable, { sessions: [{ id: 's1', durationSeconds: 7200, endedAt: '2026-09-14T10:00:00+09:00', source: 'timer' }], caffeine: [{ id: 'c1', source: 'coffee', caffeineMg: 75, startedAt: '2026-09-14T08:00:00+09:00', durationMinutes: 60, note: null }] })
+  const stats = buildDailyStats([monday], timetable, { sessions: [{ id: 's1', durationSeconds: 7200, startedAt: '2026-09-14T08:00:00+09:00', endedAt: '2026-09-14T10:00:00+09:00', source: 'timer' }], caffeine: [{ id: 'c1', source: 'coffee', caffeineMg: 75, startedAt: '2026-09-14T08:00:00+09:00', durationMinutes: 60, note: null }] })
   assert.equal(stats[0].availableMinutes, 600)
   assert.equal(stats[0].studySeconds, 7200)
   assert.equal(stats[0].caffeineMg, 75)
