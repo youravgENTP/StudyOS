@@ -1,66 +1,108 @@
-import { useMemo } from 'react'
-import { medicationExposureRangeAt } from './model'
-import type { DosageCatalogItem, DosageIntake } from './types'
+import { useLayoutEffect, useMemo, useRef, type CSSProperties } from 'react'
+import { alignedTimeTicks } from '../caffeine/chartTime'
+import { medicationExposureRangeAt, medicationExposureTimeWindow } from './model'
+import type { DosageCatalogItem, DosageIntake, DosagePkProfile } from './types'
 
-const W = 1100
-const L = 78
+const W = 1600
+const H = 470
+const L = 72
 const R = 24
-const T = 26
-const LANE_HEIGHT = 148
-const PLOT_HEIGHT = 86
-const B = 54
-const HOUR = 3_600_000
-const colors = ['#9b7be0', '#45a09c', '#d08a55']
+const T = 42
+const B = 112
+const plotBottom = H - B
+const seriesColors = ['#9b7be0', '#45a09c', '#d08a55', '#4f8ed6', '#d66583', '#77a84d']
 
 type PlotPoint = { x: number; lowY: number; highY: number; middleY: number }
+type SeriesDefinition = { item: DosageCatalogItem; profile: DosagePkProfile; label: string; color: string }
+
 const linePath = (points: PlotPoint[]) => points.map((point, index) => `${index ? 'L' : 'M'}${point.x.toFixed(1)},${point.middleY.toFixed(1)}`).join(' ')
 const bandPath = (points: PlotPoint[]) => `${points.map((point, index) => `${index ? 'L' : 'M'}${point.x.toFixed(1)},${point.highY.toFixed(1)}`).join(' ')} ${[...points].reverse().map(point => `L${point.x.toFixed(1)},${point.lowY.toFixed(1)}`).join(' ')} Z`
 const clock = (date: Date) => new Intl.DateTimeFormat('ko', { hour: '2-digit', minute: '2-digit', hour12: false }).format(date)
+const normalized = (value: string) => value.toLocaleLowerCase().replaceAll(/[^a-z0-9가-힣]/g, '')
 
-export function MedicationExposureChart({ catalog, intakes, logDate }: { catalog: DosageCatalogItem[]; intakes: DosageIntake[]; logDate: string }) {
+function seriesLabel(item: DosageCatalogItem, profile: DosagePkProfile) {
+  const analyte = normalized(profile.analyte)
+  const ingredient = normalized(item.ingredientName)
+  return analyte === ingredient ? item.displayName : `${item.displayName} · ${profile.analyte}`
+}
+
+export function MedicationExposureChart({
+  catalog,
+  intakes,
+  now,
+  axisFontSize,
+  loading,
+}: {
+  catalog: DosageCatalogItem[]
+  intakes: DosageIntake[]
+  now: Date
+  axisFontSize: number
+  loading: boolean
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const positionedRef = useRef(false)
   const chart = useMemo(() => {
-    const start = new Date(`${logDate}T00:00:00`)
-    const end = new Date(start.getTime() + 36 * HOUR)
-    const items = catalog.flatMap(item => {
-      const itemIntakes = intakes.filter(intake => intake.catalogKey === item.key)
-      const profiles = item.pkProfiles.filter(profile => profile.tmaxMinMinutes !== null && profile.halfLifeMinMinutes !== null)
-      return itemIntakes.length && profiles.length ? [{ item, itemIntakes, profiles }] : []
-    })
-    const height = T + items.length * LANE_HEIGHT + B
+    const { visibleStart: start, visibleEnd: end } = medicationExposureTimeWindow(now)
     const x = (time: Date) => L + (time.getTime() - start.getTime()) / (end.getTime() - start.getTime()) * (W - L - R)
-    const sampleTimes = Array.from({ length: 217 }, (_, index) => new Date(start.getTime() + index * 10 * 60_000))
-    const lanes = items.map((entry, laneIndex) => {
-      const samples = entry.profiles.map(profile => sampleTimes.map(time => medicationExposureRangeAt(entry.itemIntakes, entry.item, profile, time)!))
-      const maximum = Math.max(100, ...samples.flatMap(series => series.map(point => point.max)))
-      const scaleMaximum = Math.ceil(maximum / 50) * 50
-      const plotBottom = T + laneIndex * LANE_HEIGHT + PLOT_HEIGHT + 30
-      const y = (value: number) => plotBottom - Math.min(value / scaleMaximum, 1) * PLOT_HEIGHT
-      return {
-        ...entry, laneIndex, scaleMaximum, plotBottom,
-        series: entry.profiles.map((profile, profileIndex) => ({
-          profile,
-          color: colors[profileIndex % colors.length],
-          points: samples[profileIndex].map((range, index) => ({ x: x(sampleTimes[index]), lowY: y(range.min), highY: y(range.max), middleY: y((range.min + range.max) / 2) })),
-        })),
-      }
+    const activeCatalogKeys = new Set(intakes.filter(intake => new Date(intake.takenAt) <= end).map(intake => intake.catalogKey))
+    const definitions: SeriesDefinition[] = catalog.flatMap(item => activeCatalogKeys.has(item.key)
+      ? item.pkProfiles.filter(profile => profile.tmaxMinMinutes !== null && profile.halfLifeMinMinutes !== null).map(profile => ({ item, profile, label: seriesLabel(item, profile), color: '' }))
+      : [])
+      .map((series, index) => ({ ...series, color: seriesColors[index % seriesColors.length] }))
+    const sampleTimes = Array.from({ length: 361 }, (_, index) => new Date(start.getTime() + index * 10 * 60_000))
+    const ranges = definitions.map(series => sampleTimes.map(time => medicationExposureRangeAt(intakes, series.item, series.profile, time)!))
+    const highestValue = Math.max(100, ...ranges.flatMap(points => points.map(point => point.max)))
+    const step = Math.max(25, Math.ceil(highestValue / 100) * 25)
+    const maximum = step * 4
+    const y = (value: number) => plotBottom - value / maximum * (plotBottom - T)
+    const series = definitions.map((definition, definitionIndex) => ({
+      ...definition,
+      points: ranges[definitionIndex].map((range, pointIndex) => ({
+        x: x(sampleTimes[pointIndex]),
+        lowY: y(range.min),
+        highY: y(range.max),
+        middleY: y((range.min + range.max) / 2),
+      })),
+    }))
+    const visibleIntakes = intakes.filter(intake => {
+      const time = new Date(intake.takenAt)
+      return time >= start && time <= end
+    }).sort((first, second) => first.takenAt.localeCompare(second.takenAt))
+    return { start, end, x, y, step, maximum, series, visibleIntakes }
+  }, [catalog, intakes, now])
+
+  useLayoutEffect(() => {
+    if (loading || positionedRef.current || chart.series.length === 0) return
+    const frame = requestAnimationFrame(() => {
+      const element = scrollRef.current
+      if (!element) return
+      const nowInContent = chart.x(now) / W * element.scrollWidth
+      element.scrollLeft = Math.max(0, nowInContent - element.clientWidth * 0.42)
+      positionedRef.current = true
     })
-    const ticks = Array.from({ length: 7 }, (_, index) => new Date(start.getTime() + index * 6 * HOUR))
-    return { start, end, height, x, lanes, ticks }
-  }, [catalog, intakes, logDate])
+    return () => cancelAnimationFrame(frame)
+  }, [chart, loading, now])
+
+  const ticks = Array.from({ length: 5 }, (_, index) => index * chart.step)
+  const timeTicks = alignedTimeTicks(chart.start, chart.end)
+  const currentX = chart.x(now)
+  const axisStyle = { '--axis-font-size': `${axisFontSize}px` } as CSSProperties
 
   return <section className="card medication-exposure">
-    <div className="card-head"><div><h2>Medication exposure</h2><span className="meta">{logDate} 복용 기록 · 36시간 전망</span></div><span className="medication-exposure-unit">1회 표시 용량 = 100%</span></div>
-    {chart.lanes.length === 0 ? <p className="empty-copy">이 날짜에는 그래프로 표시할 약물 기록이 없습니다.</p> : <div className="medication-exposure-scroll">
-      <svg viewBox={`0 0 ${W} ${chart.height}`} role="img" aria-label="약물별 추정 상대 잔존 비율 그래프">
-        {chart.ticks.map(tick => <g key={tick.toISOString()}><line className="medication-grid" x1={chart.x(tick)} x2={chart.x(tick)} y1={T} y2={chart.height - B + 6} /><text className="medication-axis-label" x={chart.x(tick)} y={chart.height - 15} textAnchor="middle">{tick.getDate() === chart.start.getDate() ? clock(tick) : `+${Math.round((tick.getTime() - chart.start.getTime()) / HOUR)}h`}</text></g>)}
-        {chart.lanes.map(lane => <g key={lane.item.key}>
-          <text className="medication-lane-title" x={L} y={T + lane.laneIndex * LANE_HEIGHT + 14}>{lane.item.displayName}</text>
-          {Array.from({ length: lane.scaleMaximum / 50 + 1 }, (_, index) => index * 50).map(value => { const y = lane.plotBottom - value / lane.scaleMaximum * PLOT_HEIGHT; return <g key={value}><line className="medication-grid horizontal" x1={L} x2={W - R} y1={y} y2={y} /><text className="medication-axis-label" x={L - 9} y={y + 4} textAnchor="end">{value}%</text></g> })}
-          {lane.series.map((series, seriesIndex) => <g key={series.profile.analyte}><path d={bandPath(series.points)} fill={series.color} opacity=".14" /><path d={linePath(series.points)} fill="none" stroke={series.color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /><g className="medication-series-label"><circle cx={W - R - 154} cy={T + lane.laneIndex * LANE_HEIGHT + 10 + seriesIndex * 14} r="4" fill={series.color} /><text x={W - R - 144} y={T + lane.laneIndex * LANE_HEIGHT + 14 + seriesIndex * 14}>{series.profile.analyte}</text></g></g>)}
-          {lane.itemIntakes.map(intake => { const time = new Date(intake.takenAt); return <g className="medication-dose-marker" key={intake.id}><line x1={chart.x(time)} x2={chart.x(time)} y1={lane.plotBottom - PLOT_HEIGHT} y2={lane.plotBottom} /><circle cx={chart.x(time)} cy={lane.plotBottom} r="4" /><text x={chart.x(time) + 5} y={lane.plotBottom - 5}>{clock(time)}</text></g> })}
-        </g>)}
-      </svg>
-    </div>}
-    <p className="medication-exposure-disclaimer">저장된 흡수 최고점과 반감기 범위를 단순화해 계산한 상대 지표입니다. 혈중농도, 약효, 안전한 재복용 시점 또는 복약 권고를 의미하지 않습니다.</p>
+    <div className="card-head"><div><h2>Medication exposure</h2><span className="meta">Estimated relative exposure · rolling PK model</span></div><span className="medication-exposure-unit">Relative exposure (%)</span></div>
+    {loading ? <p className="empty-copy">Loading exposure…</p> : chart.series.length === 0 ? <p className="empty-copy">최근 복용 기록 중 그래프로 표시할 약물이 없습니다.</p> : <>
+      <div className="medication-exposure-legend">{chart.series.map(series => <span key={`${series.item.key}-${series.profile.analyte}`}><i style={{ background: series.color }} />{series.label}</span>)}</div>
+      <div className="medication-exposure-scroll" ref={scrollRef}>
+        <svg className="medication-exposure-chart" style={axisStyle} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="약물별 추정 상대 노출 그래프">
+          {ticks.map(value => <g key={value}><line className="medication-grid horizontal" x1={L} x2={W - R} y1={chart.y(value)} y2={chart.y(value)} /><text className="medication-axis-label" x={L - 10} y={chart.y(value) + axisFontSize / 3} textAnchor="end">{value}</text></g>)}
+          <text className="medication-axis-unit" x="13" y={T - 13}>%</text>
+          {timeTicks.map(time => <g key={time.toISOString()}><line className="medication-grid" x1={chart.x(time)} x2={chart.x(time)} y1={T} y2={plotBottom} /><text className="medication-axis-label" x={chart.x(time)} y={plotBottom + 29} textAnchor="middle">{clock(time)}</text></g>)}
+          {chart.series.map(series => <g key={`${series.item.key}-${series.profile.analyte}`}><path d={bandPath(series.points)} fill={series.color} opacity=".12" /><path d={linePath(series.points)} fill="none" stroke={series.color} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" /></g>)}
+          <g className="medication-now-marker"><line x1={currentX} x2={currentX} y1={T} y2={plotBottom} /><text x={currentX + 7} y={T + 13}>Now</text></g>
+          {chart.visibleIntakes.map((intake, index) => { const time = new Date(intake.takenAt); const x = chart.x(time); const lane = index % 3; return <g className="medication-dose-marker" key={intake.id}><line x1={x} x2={x} y1={plotBottom} y2={plotBottom + 31 + lane * 21} /><circle cx={x} cy={plotBottom} r="4" /><text x={x + 5} y={plotBottom + 40 + lane * 21}>{intake.productName} · {clock(time)}</text></g> })}
+        </svg>
+      </div>
+    </>}
+    <p className="medication-exposure-disclaimer">저장된 Tmax와 반감기 범위를 단순화한 추정 상대 지표입니다. 측정 혈중농도·임상 효과·복약 권고·안전한 재복용 시점을 의미하지 않습니다.</p>
   </section>
 }

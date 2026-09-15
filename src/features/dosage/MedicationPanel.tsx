@@ -1,7 +1,9 @@
 import { ExternalLink, Pill, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+import { useCaffeineAxisFontSize } from '../settings/preferences'
 import { createDosageIntake, deleteDosageIntake, listDosageCatalog, listDosageIntakes, onDosageChanged } from './api'
 import { MedicationExposureChart } from './MedicationExposureChart'
+import { medicationExposureTimeWindow } from './model'
 import type { DosageCatalogItem, DosageIntake } from './types'
 import './dosage.css'
 
@@ -15,28 +17,59 @@ const duration = (min: number | null, max: number | null) => min === null ? '자
 const peak = (min: number | null, max: number | null) => min === null ? '자료 없음' : `${min}–${max ?? min}분`
 
 export function MedicationPanel() {
+  const axisFontSize = useCaffeineAxisFontSize()
   const [catalog, setCatalog] = useState<DosageCatalogItem[]>([])
-  const [intakes, setIntakes] = useState<DosageIntake[]>([])
+  const [dailyIntakes, setDailyIntakes] = useState<DosageIntake[]>([])
+  const [exposureIntakes, setExposureIntakes] = useState<DosageIntake[]>([])
+  const [now, setNow] = useState(new Date())
   const [takenAt, setTakenAt] = useState(() => localInput(new Date()))
   const [logDate, setLogDate] = useState(() => dateKey(new Date()))
-  const [loading, setLoading] = useState(true)
+  const [catalogLoading, setCatalogLoading] = useState(true)
+  const [historyLoading, setHistoryLoading] = useState(true)
+  const [exposureLoading, setExposureLoading] = useState(true)
   const [savingKey, setSavingKey] = useState('')
   const [error, setError] = useState('')
 
-  const load = useCallback(async () => {
+  const loadCatalog = useCallback(async () => {
+    try { setCatalog(await listDosageCatalog()) }
+    catch (caught) { setError(caught instanceof Error ? caught.message : '약물 정보를 불러오지 못했습니다.') }
+    finally { setCatalogLoading(false) }
+  }, [])
+
+  const loadExposure = useCallback(async () => {
+    const { fetchStart, fetchEnd } = medicationExposureTimeWindow(new Date())
+    setExposureLoading(true)
+    try { setExposureIntakes(await listDosageIntakes(fetchStart, fetchEnd)) }
+    catch (caught) { setError(caught instanceof Error ? caught.message : '약물 노출 기록을 불러오지 못했습니다.') }
+    finally { setExposureLoading(false) }
+  }, [])
+
+  const loadHistory = useCallback(async () => {
     const { from, to } = dayRange(dateFromKey(logDate))
-    try {
-      const [items, records] = await Promise.all([listDosageCatalog(), listDosageIntakes(from, to)])
-      setCatalog(items); setIntakes(records); setError('')
-    } catch (caught) { setError(caught instanceof Error ? caught.message : '복용 기록을 불러오지 못했습니다.') }
-    finally { setLoading(false) }
+    setHistoryLoading(true)
+    try { setDailyIntakes(await listDosageIntakes(from, to)) }
+    catch (caught) { setError(caught instanceof Error ? caught.message : '복용 기록을 불러오지 못했습니다.') }
+    finally { setHistoryLoading(false) }
   }, [logDate])
 
   useEffect(() => {
-    const timer = window.setTimeout(() => void load(), 0)
-    const off = onDosageChanged(() => void load())
+    const timer = window.setTimeout(() => {
+      void loadCatalog()
+      void loadExposure()
+    }, 0)
+    const off = onDosageChanged(() => void loadExposure())
     return () => { window.clearTimeout(timer); off() }
-  }, [load])
+  }, [loadCatalog, loadExposure])
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadHistory(), 0)
+    return () => window.clearTimeout(timer)
+  }, [loadHistory])
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 60_000)
+    return () => window.clearInterval(timer)
+  }, [])
 
   async function take(item: DosageCatalogItem) {
     const time = new Date(takenAt)
@@ -45,17 +78,31 @@ export function MedicationPanel() {
     try {
       const created = await createDosageIntake(item, time)
       const createdDate = dateKey(time)
-      if (createdDate === logDate) setIntakes(current => [created, ...current.filter(record => record.id !== created.id)])
+      setExposureIntakes(current => [created, ...current.filter(record => record.id !== created.id)])
+      if (createdDate === logDate) setDailyIntakes(current => [created, ...current.filter(record => record.id !== created.id)])
       setLogDate(createdDate)
       setTakenAt(localInput(new Date()))
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : '복용 기록을 저장하지 못했습니다.')
+    } finally {
+      setSavingKey('')
     }
-    catch (caught) { setError(caught instanceof Error ? caught.message : '복용 기록을 저장하지 못했습니다.') }
-    finally { setSavingKey('') }
+  }
+
+  async function remove(id: string) {
+    try {
+      await deleteDosageIntake(id)
+      setDailyIntakes(current => current.filter(record => record.id !== id))
+      setExposureIntakes(current => current.filter(record => record.id !== id))
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : '복용 기록을 삭제하지 못했습니다.')
+    }
   }
 
   return <section className="dosage-medication-section">
     <div className="dosage-section-heading"><div><span className="eyebrow">Medication records</span><h2>Medications</h2><p>복용 사실을 기록합니다. 아래 약동학 값은 일반적인 참고 범위이며 개인별 효과나 혈중농도 측정값이 아닙니다.</p></div><label><span>복용 시각</span><input type="datetime-local" value={takenAt} onChange={event => setTakenAt(event.target.value)} /></label></div>
-    {loading ? <p className="empty-copy">Loading medications…</p> : <div className="medication-layout">
+    <MedicationExposureChart catalog={catalog} intakes={exposureIntakes} now={now} axisFontSize={axisFontSize} loading={catalogLoading || exposureLoading} />
+    {catalogLoading ? <p className="empty-copy">Loading medications…</p> : <div className="medication-layout">
       <div className="medication-catalog">
         {catalog.map(item => <article className="card medication-card" key={item.key}>
           <header><span><Pill /></span><div><strong>{item.displayName}</strong><small>{item.ingredientName} · {item.strengthValue} {item.strengthUnit}</small></div></header>
@@ -65,9 +112,8 @@ export function MedicationPanel() {
           </div>
         </article>)}
       </div>
-      <section className="card medication-log"><div className="card-head medication-log-head"><div><h2>약물 기록</h2><span className="meta">{readableDate(logDate)} · {intakes.length}회</span></div><label><span>기록 날짜</span><input type="date" value={logDate} onChange={event => setLogDate(event.target.value)} /></label></div>{intakes.length ? <div>{intakes.map(item => <div className="medication-log-row" key={item.id}><time>{new Intl.DateTimeFormat('ko', { hour: '2-digit', minute: '2-digit' }).format(new Date(item.takenAt))}</time><span><strong>{item.productName}</strong><small>{item.doseQuantity} {item.doseUnit} · {item.ingredientAmount} {item.ingredientUnit}</small></span><button onClick={() => void deleteDosageIntake(item.id)} aria-label={`${item.productName} 기록 삭제`}><Trash2 /></button></div>)}</div> : <p className="empty-copy">이 날짜에 기록된 약물이 없습니다.</p>}</section>
+      <section className="card medication-log"><div className="card-head medication-log-head"><div><h2>약물 기록</h2><span className="meta">{readableDate(logDate)} · {dailyIntakes.length}회</span></div><label><span>기록 날짜</span><input type="date" value={logDate} onChange={event => setLogDate(event.target.value)} /></label></div>{historyLoading ? <p className="empty-copy">Loading history…</p> : dailyIntakes.length ? <div>{dailyIntakes.map(item => <div className="medication-log-row" key={item.id}><time>{new Intl.DateTimeFormat('ko', { hour: '2-digit', minute: '2-digit' }).format(new Date(item.takenAt))}</time><span><strong>{item.productName}</strong><small>{item.doseQuantity} {item.doseUnit} · {item.ingredientAmount} {item.ingredientUnit}</small></span><button onClick={() => void remove(item.id)} aria-label={`${item.productName} 기록 삭제`}><Trash2 /></button></div>)}</div> : <p className="empty-copy">이 날짜에 기록된 약물이 없습니다.</p>}</section>
     </div>}
-    {!loading && <MedicationExposureChart catalog={catalog} intakes={intakes} logDate={logDate} />}
-    {error && <p className="feature-error">{error}</p>}
+    {error && <p className="feature-error" role="alert">{error}</p>}
   </section>
 }

@@ -1,6 +1,21 @@
 import type { DosageCatalogItem, DosageIntake, DosagePkProfile } from './types'
 
 const MINUTE = 60_000
+const HOUR = 60 * MINUTE
+const DAY = 24 * HOUR
+
+export const MEDICATION_EXPOSURE_LOOKBACK_DAYS = 7
+export const MEDICATION_EXPOSURE_PAST_HOURS = 24
+export const MEDICATION_EXPOSURE_FUTURE_HOURS = 36
+
+export function medicationExposureTimeWindow(now: Date) {
+  return {
+    visibleStart: new Date(now.getTime() - MEDICATION_EXPOSURE_PAST_HOURS * HOUR),
+    visibleEnd: new Date(now.getTime() + MEDICATION_EXPOSURE_FUTURE_HOURS * HOUR),
+    fetchStart: new Date(now.getTime() - MEDICATION_EXPOSURE_LOOKBACK_DAYS * DAY),
+    fetchEnd: new Date(now.getTime() + MEDICATION_EXPOSURE_FUTURE_HOURS * HOUR),
+  }
+}
 
 function exposureForParameters(elapsedMinutes: number, tmaxMinutes: number, halfLifeMinutes: number) {
   if (elapsedMinutes < 0) return 0
