@@ -54,14 +54,15 @@ export async function listDosageIntakes(from: Date, to: Date): Promise<DosageInt
   return (data ?? []).map(row => intake(row as Record<string, unknown>))
 }
 
-export async function createDosageIntake(item: DosageCatalogItem, takenAt: Date) {
-  const { error } = await dataApi.from('dosage_intakes').insert({
+export async function createDosageIntake(item: DosageCatalogItem, takenAt: Date): Promise<DosageIntake> {
+  const { data, error } = await dataApi.from('dosage_intakes').insert({
     catalog_key: item.key, product_name: item.displayName, ingredient_name: item.ingredientName,
     dose_quantity: 1, dose_unit: item.doseForm.toLowerCase().includes('capsule') ? 'capsule' : 'tablet',
     ingredient_amount: item.strengthValue, ingredient_unit: item.strengthUnit, route: item.route, taken_at: takenAt.toISOString(),
-  })
+  }).select('id,catalog_key,product_name,ingredient_name,dose_quantity,dose_unit,ingredient_amount,ingredient_unit,route,taken_at,note').single()
   if (error) throw fail(error)
   notify()
+  return intake(data as Record<string, unknown>)
 }
 
 export async function deleteDosageIntake(id: string) {

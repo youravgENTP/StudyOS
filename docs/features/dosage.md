@@ -11,4 +11,6 @@ Dosage preserves the existing Caffeine intake and decay model and adds medicatio
 
 Catalog and pharmacokinetic profile rows are system reference data readable by authenticated users. Personal `dosage_intakes` rows are protected by sole-owner RLS and snapshot product, ingredient, amount, unit, route, and administration time so later catalog changes cannot rewrite history.
 
+A successful medication insert returns its durable row and adds it to the visible log immediately. The log follows the date of a newly recorded dose, and its date selector exposes backdated records instead of limiting the UI to today.
+
 Pharmacokinetic profiles remain `reference_only`. StudyOS displays sourced absorption and half-life ranges but does not infer medication blood concentration, clinical effect, interactions, adherence, or dosing recommendations. Acetylcysteine keeps parent-drug and total-acetylcysteine half-life profiles separate because those measurements are not interchangeable.

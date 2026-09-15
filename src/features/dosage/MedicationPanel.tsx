@@ -6,6 +6,9 @@ import './dosage.css'
 
 const localInput = (date: Date) => new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
 const dayRange = (date = new Date()) => { const from = new Date(date); from.setHours(0, 0, 0, 0); const to = new Date(from); to.setDate(to.getDate() + 1); return { from, to } }
+const dateKey = (date: Date) => date.toLocaleDateString('en-CA')
+const dateFromKey = (key: string) => new Date(`${key}T12:00:00`)
+const readableDate = (key: string) => new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'short', day: 'numeric', weekday: 'short' }).format(dateFromKey(key))
 const hours = (minutes: number) => Number.isInteger(minutes / 60) ? String(minutes / 60) : (minutes / 60).toFixed(1)
 const duration = (min: number | null, max: number | null) => min === null ? '자료 없음' : min === max || max === null ? `${hours(min)}시간` : `${hours(min)}–${hours(max)}시간`
 const peak = (min: number | null, max: number | null) => min === null ? '자료 없음' : `${min}–${max ?? min}분`
@@ -14,18 +17,19 @@ export function MedicationPanel() {
   const [catalog, setCatalog] = useState<DosageCatalogItem[]>([])
   const [intakes, setIntakes] = useState<DosageIntake[]>([])
   const [takenAt, setTakenAt] = useState(() => localInput(new Date()))
+  const [logDate, setLogDate] = useState(() => dateKey(new Date()))
   const [loading, setLoading] = useState(true)
   const [savingKey, setSavingKey] = useState('')
   const [error, setError] = useState('')
 
   const load = useCallback(async () => {
-    const { from, to } = dayRange()
+    const { from, to } = dayRange(dateFromKey(logDate))
     try {
       const [items, records] = await Promise.all([listDosageCatalog(), listDosageIntakes(from, to)])
       setCatalog(items); setIntakes(records); setError('')
     } catch (caught) { setError(caught instanceof Error ? caught.message : '복용 기록을 불러오지 못했습니다.') }
     finally { setLoading(false) }
-  }, [])
+  }, [logDate])
 
   useEffect(() => {
     const timer = window.setTimeout(() => void load(), 0)
@@ -37,7 +41,13 @@ export function MedicationPanel() {
     const time = new Date(takenAt)
     if (Number.isNaN(time.getTime())) { setError('복용 시각을 선택해 주세요.'); return }
     setSavingKey(item.key); setError('')
-    try { await createDosageIntake(item, time); setTakenAt(localInput(new Date())) }
+    try {
+      const created = await createDosageIntake(item, time)
+      const createdDate = dateKey(time)
+      if (createdDate === logDate) setIntakes(current => [created, ...current.filter(record => record.id !== created.id)])
+      setLogDate(createdDate)
+      setTakenAt(localInput(new Date()))
+    }
     catch (caught) { setError(caught instanceof Error ? caught.message : '복용 기록을 저장하지 못했습니다.') }
     finally { setSavingKey('') }
   }
@@ -54,7 +64,7 @@ export function MedicationPanel() {
           </div>
         </article>)}
       </div>
-      <section className="card medication-log"><div className="card-head"><h2>오늘의 약물 기록</h2><span className="meta">{intakes.length}회</span></div>{intakes.length ? <div>{intakes.map(item => <div className="medication-log-row" key={item.id}><time>{new Intl.DateTimeFormat('ko', { hour: '2-digit', minute: '2-digit' }).format(new Date(item.takenAt))}</time><span><strong>{item.productName}</strong><small>{item.doseQuantity} {item.doseUnit} · {item.ingredientAmount} {item.ingredientUnit}</small></span><button onClick={() => void deleteDosageIntake(item.id)} aria-label={`${item.productName} 기록 삭제`}><Trash2 /></button></div>)}</div> : <p className="empty-copy">오늘 기록된 약물이 없습니다.</p>}</section>
+      <section className="card medication-log"><div className="card-head medication-log-head"><div><h2>약물 기록</h2><span className="meta">{readableDate(logDate)} · {intakes.length}회</span></div><label><span>기록 날짜</span><input type="date" value={logDate} onChange={event => setLogDate(event.target.value)} /></label></div>{intakes.length ? <div>{intakes.map(item => <div className="medication-log-row" key={item.id}><time>{new Intl.DateTimeFormat('ko', { hour: '2-digit', minute: '2-digit' }).format(new Date(item.takenAt))}</time><span><strong>{item.productName}</strong><small>{item.doseQuantity} {item.doseUnit} · {item.ingredientAmount} {item.ingredientUnit}</small></span><button onClick={() => void deleteDosageIntake(item.id)} aria-label={`${item.productName} 기록 삭제`}><Trash2 /></button></div>)}</div> : <p className="empty-copy">이 날짜에 기록된 약물이 없습니다.</p>}</section>
     </div>}
     {error && <p className="feature-error">{error}</p>}
   </section>
