@@ -25,7 +25,7 @@ function profile(row: Record<string, unknown>): DosagePkProfile {
 
 export async function listDosageCatalog(): Promise<DosageCatalogItem[]> {
   const [catalogResult, profileResult] = await Promise.all([
-    dataApi.from('dosage_catalog').select('key,display_name,aliases,ingredient_name,category,strength_value,strength_unit,dose_form,route,manufacturer').order('display_name'),
+    dataApi.from('dosage_catalog').select('key,display_name,aliases,ingredient_name,category,strength_value,strength_unit,default_dose_quantity,dose_form,route,manufacturer').order('display_name'),
     dataApi.from('dosage_pk_profiles').select('catalog_key,analyte,tmax_min_minutes,tmax_max_minutes,half_life_min_minutes,half_life_max_minutes,bioavailability_min_percent,bioavailability_max_percent,absorption_notes,model_status,source_title,source_url'),
   ])
   if (catalogResult.error || profileResult.error) throw fail(catalogResult.error ?? profileResult.error)
@@ -34,7 +34,7 @@ export async function listDosageCatalog(): Promise<DosageCatalogItem[]> {
     return {
       key: String(row.key), displayName: String(row.display_name), aliases: Array.isArray(row.aliases) ? row.aliases.map(String) : [],
       ingredientName: String(row.ingredient_name), category: row.category as DosageCatalogItem['category'], strengthValue: Number(row.strength_value),
-      strengthUnit: String(row.strength_unit), doseForm: String(row.dose_form), route: String(row.route), manufacturer: row.manufacturer ? String(row.manufacturer) : null,
+      strengthUnit: String(row.strength_unit), defaultDoseQuantity: Number(row.default_dose_quantity), doseForm: String(row.dose_form), route: String(row.route), manufacturer: row.manufacturer ? String(row.manufacturer) : null,
       pkProfiles: (profileResult.data ?? []).filter(item => String((item as Record<string, unknown>).catalog_key) === String(row.key)).map(item => profile(item as Record<string, unknown>)),
     }
   })
@@ -57,8 +57,8 @@ export async function listDosageIntakes(from: Date, to: Date): Promise<DosageInt
 export async function createDosageIntake(item: DosageCatalogItem, takenAt: Date): Promise<DosageIntake> {
   const { data, error } = await dataApi.from('dosage_intakes').insert({
     catalog_key: item.key, product_name: item.displayName, ingredient_name: item.ingredientName,
-    dose_quantity: 1, dose_unit: item.doseForm.toLowerCase().includes('capsule') ? 'capsule' : 'tablet',
-    ingredient_amount: item.strengthValue, ingredient_unit: item.strengthUnit, route: item.route, taken_at: takenAt.toISOString(),
+    dose_quantity: item.defaultDoseQuantity, dose_unit: item.doseForm.toLowerCase().includes('capsule') ? 'capsule' : 'tablet',
+    ingredient_amount: item.strengthValue * item.defaultDoseQuantity, ingredient_unit: item.strengthUnit, route: item.route, taken_at: takenAt.toISOString(),
   }).select('id,catalog_key,product_name,ingredient_name,dose_quantity,dose_unit,ingredient_amount,ingredient_unit,route,taken_at,note').single()
   if (error) throw fail(error)
   notify()

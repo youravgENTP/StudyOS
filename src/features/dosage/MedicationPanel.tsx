@@ -15,6 +15,7 @@ const readableDate = (key: string) => new Intl.DateTimeFormat('ko-KR', { year: '
 const hours = (minutes: number) => Number.isInteger(minutes / 60) ? String(minutes / 60) : (minutes / 60).toFixed(1)
 const duration = (min: number | null, max: number | null) => min === null ? '자료 없음' : min === max || max === null ? `${hours(min)}시간` : `${hours(min)}–${hours(max)}시간`
 const peak = (min: number | null, max: number | null) => min === null ? '자료 없음' : `${min}–${max ?? min}분`
+const doseLabel = (item: DosageCatalogItem) => `${item.defaultDoseQuantity} ${item.doseForm.toLowerCase().includes('capsule') ? '캡슐' : '정'}`
 
 export function MedicationPanel() {
   const axisFontSize = useCaffeineAxisFontSize()
@@ -106,7 +107,7 @@ export function MedicationPanel() {
       <div className="medication-catalog">
         {catalog.map(item => <article className="card medication-card" key={item.key}>
           <header><span><Pill /></span><div><strong>{item.displayName}</strong><small>{item.ingredientName} · {item.strengthValue} {item.strengthUnit}</small></div></header>
-          <button className="button primary" disabled={Boolean(savingKey)} onClick={() => void take(item)}>{savingKey === item.key ? '기록 중…' : `1 ${item.doseForm.toLowerCase().includes('capsule') ? '캡슐' : '정'} 복용 기록`}</button>
+          <button className="button primary" disabled={Boolean(savingKey)} onClick={() => void take(item)}>{savingKey === item.key ? '기록 중…' : `${doseLabel(item)} 복용 기록`}</button>
           <div className="pk-summary">
             {item.pkProfiles.map(profile => <div key={`${profile.analyte}-${profile.sourceUrl}`}><strong>{profile.analyte}</strong><span>흡수 최고점 {peak(profile.tmaxMinMinutes, profile.tmaxMaxMinutes)}</span><span>반감기 {duration(profile.halfLifeMinMinutes, profile.halfLifeMaxMinutes)}</span>{profile.bioavailabilityMinPercent !== null && <span>경구 생체이용률 약 {profile.bioavailabilityMinPercent}%</span>}<a href={profile.sourceUrl} target="_blank" rel="noreferrer">근거 자료 <ExternalLink /></a></div>)}
           </div>

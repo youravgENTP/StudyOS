@@ -20,6 +20,7 @@ export type DosageCatalogItem = {
   category: 'medication' | 'supplement' | 'other'
   strengthValue: number
   strengthUnit: string
+  defaultDoseQuantity: number
   doseForm: string
   route: string
   manufacturer: string | null

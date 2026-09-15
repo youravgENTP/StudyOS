@@ -11,7 +11,7 @@ const profile: DosagePkProfile = {
 }
 const catalog: DosageCatalogItem = {
   key: 'example', displayName: 'Example 500 mg', aliases: [], ingredientName: 'Example', category: 'medication',
-  strengthValue: 500, strengthUnit: 'mg', doseForm: 'Tablet', route: 'Oral', manufacturer: null, pkProfiles: [profile],
+  strengthValue: 500, strengthUnit: 'mg', defaultDoseQuantity: 1, doseForm: 'Tablet', route: 'Oral', manufacturer: null, pkProfiles: [profile],
 }
 const intake: DosageIntake = {
   id: 'dose-1', catalogKey: 'example', productName: 'Example 500 mg', ingredientName: 'Example',
