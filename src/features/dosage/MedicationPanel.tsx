@@ -1,6 +1,7 @@
 import { ExternalLink, Pill, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { createDosageIntake, deleteDosageIntake, listDosageCatalog, listDosageIntakes, onDosageChanged } from './api'
+import { MedicationExposureChart } from './MedicationExposureChart'
 import type { DosageCatalogItem, DosageIntake } from './types'
 import './dosage.css'
 
@@ -66,6 +67,7 @@ export function MedicationPanel() {
       </div>
       <section className="card medication-log"><div className="card-head medication-log-head"><div><h2>약물 기록</h2><span className="meta">{readableDate(logDate)} · {intakes.length}회</span></div><label><span>기록 날짜</span><input type="date" value={logDate} onChange={event => setLogDate(event.target.value)} /></label></div>{intakes.length ? <div>{intakes.map(item => <div className="medication-log-row" key={item.id}><time>{new Intl.DateTimeFormat('ko', { hour: '2-digit', minute: '2-digit' }).format(new Date(item.takenAt))}</time><span><strong>{item.productName}</strong><small>{item.doseQuantity} {item.doseUnit} · {item.ingredientAmount} {item.ingredientUnit}</small></span><button onClick={() => void deleteDosageIntake(item.id)} aria-label={`${item.productName} 기록 삭제`}><Trash2 /></button></div>)}</div> : <p className="empty-copy">이 날짜에 기록된 약물이 없습니다.</p>}</section>
     </div>}
+    {!loading && <MedicationExposureChart catalog={catalog} intakes={intakes} logDate={logDate} />}
     {error && <p className="feature-error">{error}</p>}
   </section>
 }

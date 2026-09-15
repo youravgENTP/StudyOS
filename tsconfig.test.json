@@ -3,6 +3,6 @@
   "compilerOptions": {
     "types": ["node"]
   },
-  "include": ["src/features/caffeine/chartTime.ts", "src/features/caffeine/defaultPresets.ts", "src/features/caffeine/model.ts", "src/features/caffeine/model.test.ts", "src/features/caffeine/types.ts", "src/features/tasks/model.ts", "src/features/tasks/model.test.ts", "src/features/tasks/types.ts", "src/features/timetable/model.ts", "src/features/timetable/model.test.ts", "src/features/timetable/types.ts", "src/features/stats/model.ts", "src/features/stats/model.test.ts", "src/features/stats/types.ts"],
+  "include": ["src/features/caffeine/chartTime.ts", "src/features/caffeine/defaultPresets.ts", "src/features/caffeine/model.ts", "src/features/caffeine/model.test.ts", "src/features/caffeine/types.ts", "src/features/dosage/model.ts", "src/features/dosage/model.test.ts", "src/features/dosage/types.ts", "src/features/tasks/model.ts", "src/features/tasks/model.test.ts", "src/features/tasks/types.ts", "src/features/timetable/model.ts", "src/features/timetable/model.test.ts", "src/features/timetable/types.ts", "src/features/stats/model.ts", "src/features/stats/model.test.ts", "src/features/stats/types.ts"],
   "exclude": []
 }
