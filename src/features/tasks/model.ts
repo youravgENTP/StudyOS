@@ -47,6 +47,10 @@ export function sectionProgress(sectionId: string, tasks: Task[]) {
   return progressForTasks(tasks.filter(task => task.sectionId === sectionId))
 }
 
+export function sortTasksByDate(tasks: Task[]) {
+  return [...tasks].sort((a, b) => a.dueDate.localeCompare(b.dueDate) || a.position - b.position || a.title.localeCompare(b.title))
+}
+
 export function projectProgress(projectId: string, tasks: Task[]) {
   return progressForTasks(tasks.filter(task => task.projectId === projectId))
 }

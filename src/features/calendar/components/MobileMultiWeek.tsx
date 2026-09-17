@@ -41,7 +41,7 @@ export function MobileMultiWeek({ start, dayCount, tasks, workstreams, sections,
       .map(value => ({ kind: 'workstream' as const, value, start: value.startDate ?? value.dueDate, end: value.dueDate, color: value.subject?.color ?? categoryColor[projects.find(project => project.id === value.projectId)?.category ?? value.category] })),
     ...tasks
       .filter(item => item.showOnCalendar && filters.sources.has('task') && filters.categories.has(item.category))
-      .map(value => ({ kind: 'task' as const, value, start: value.startDate ?? value.dueDate, end: value.dueDate, color: categoryColor[value.category] })),
+      .map(value => ({ kind: 'task' as const, value, start: value.startDate ?? value.dueDate, end: value.dueDate, color: workstreams.find(workstream => workstream.id === value.workstreamId)?.subject?.color ?? categoryColor[value.category] })),
   ], [events, filters, projects, tasks, workstreams])
 
   const visibleSelectedDate = selectedDate && selectedDate >= isoDate(start) && selectedDate <= isoDate(addDays(start, dayCount - 1)) ? selectedDate : null

@@ -15,17 +15,18 @@ export type CalendarFilters = { categories: Set<TaskCategory>; sources: Set<Sour
 
 const categoryColor = { study: '#719ce3', personal: '#a88bd8', errands: '#d4a15c', development: '#6eae91', other: '#89909a' }
 
-function colorFor(item: CalendarItem, projects: Project[]) {
+function colorFor(item: CalendarItem, projects: Project[], workstreams: Workstream[]) {
   if (item.kind === 'event') return item.value.subcategory?.color ?? item.value.subject?.color ?? '#bf5af2'
   if (item.kind === 'workstream') {
     const project = projects.find(candidate => candidate.id === item.value.projectId)
     return item.value.subject?.color ?? categoryColor[project?.category ?? item.value.category]
   }
-  return categoryColor[item.value.category]
+  const parent = workstreams.find(workstream => workstream.id === item.value.workstreamId)
+  return parent?.subject?.color ?? categoryColor[item.value.category]
 }
 
-function Week({ start, items, projects, sections, showSectionGroups, linkedHighlight, highlight, onHighlight, onCreate, onSelect, onSelectWorkstream }: {
-  start: Date; items: CalendarItem[]; projects: Project[]; sections: Section[]; showSectionGroups: boolean; linkedHighlight: boolean; highlight: CalendarHighlight; onHighlight: (value: CalendarHighlight) => void; onCreate: (date: Date) => void; onSelect: (selection: Selection) => void; onSelectWorkstream: (workstream: Workstream) => void
+function Week({ start, items, projects, workstreams, sections, showSectionGroups, linkedHighlight, highlight, onHighlight, onCreate, onSelect, onSelectWorkstream }: {
+  start: Date; items: CalendarItem[]; projects: Project[]; workstreams: Workstream[]; sections: Section[]; showSectionGroups: boolean; linkedHighlight: boolean; highlight: CalendarHighlight; onHighlight: (value: CalendarHighlight) => void; onCreate: (date: Date) => void; onSelect: (selection: Selection) => void; onSelectWorkstream: (workstream: Workstream) => void
 }) {
   const today = new Date()
   const days = Array.from({ length: 7 }, (_, index) => addDays(start, index))
@@ -70,7 +71,7 @@ function Week({ start, items, projects, sections, showSectionGroups, linkedHighl
   }
 
   function entry(item: CalendarItem, spanningBar = false) {
-    const color = colorFor(item, projects)
+    const color = colorFor(item, projects, workstreams)
     const timed = item.kind === 'event' && !item.value.allDay ? item.value.startTime?.slice(0, 5) : ''
     const major = item.kind === 'event' ? item.value.isMajor : item.value.isDday
     return <button className={`month-entry ${item.kind}${major ? ' major' : ''}${spanningBar ? ' calendar-span' : ''}${related(item) ? ' related-highlight' : ''}${planningDimmed(item) ? ' planning-dimmed' : ''}${item.kind==='task'&&item.value.status==='done'?' completed':''}`} style={{ '--entry-color': color } as CSSProperties} onMouseEnter={()=>onHighlight(highlightFor(item))} onMouseLeave={()=>onHighlight(null)} onFocus={()=>onHighlight(highlightFor(item))} onBlur={()=>onHighlight(null)} onClick={event => { event.stopPropagation(); activate(item) }}><i />{timed && <small>{timed}</small>}<span>{item.value.title}</span></button>
@@ -98,5 +99,5 @@ export function CalendarMonth({ start, dayCount, tasks, workstreams, sections, p
     ...workstreams.filter(item => item.showOnCalendar && filters.sources.has('workstream') && filters.categories.has(item.category)).map(value => ({ kind: 'workstream' as const, value, start: value.startDate ?? value.dueDate, end: value.dueDate })),
     ...tasks.filter(item => item.showOnCalendar && filters.sources.has('task') && filters.categories.has(item.category)).map(value => ({ kind: 'task' as const, value, start: value.startDate ?? value.dueDate, end: value.dueDate })),
   ]
-  return <div className="month-grid">{Array.from({ length: Math.ceil(dayCount / 7) }, (_, week) => <Week key={isoDate(addDays(start, week * 7))} start={addDays(start, week * 7)} items={items} projects={projects} sections={sections} showSectionGroups={showSectionGroups} linkedHighlight={linkedHighlight} highlight={highlight} onHighlight={setHighlight} onCreate={onCreate} onSelect={onSelect} onSelectWorkstream={onSelectWorkstream} />)}</div>
+  return <div className="month-grid">{Array.from({ length: Math.ceil(dayCount / 7) }, (_, week) => <Week key={isoDate(addDays(start, week * 7))} start={addDays(start, week * 7)} items={items} projects={projects} workstreams={workstreams} sections={sections} showSectionGroups={showSectionGroups} linkedHighlight={linkedHighlight} highlight={highlight} onHighlight={setHighlight} onCreate={onCreate} onSelect={onSelect} onSelectWorkstream={onSelectWorkstream} />)}</div>
 }

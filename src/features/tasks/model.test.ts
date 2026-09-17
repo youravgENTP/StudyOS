@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { collectDdayEntities, dateWarnings, isEntityVisibleOnDate, parseExpandedIds, projectProgress, sectionProgress, timelinePlacement, validateProjectInput, validateSectionInput, validateTaskInput, validateWorkstreamInput, workstreamProgress } from './model.ts'
+import { collectDdayEntities, dateWarnings, isEntityVisibleOnDate, parseExpandedIds, projectProgress, sectionProgress, sortTasksByDate, timelinePlacement, validateProjectInput, validateSectionInput, validateTaskInput, validateWorkstreamInput, workstreamProgress } from './model.ts'
 import type { Project, ProjectInput, Task, TaskInput, Workstream, WorkstreamInput } from './types.ts'
 
 const base = { title: 'Item', description: null, category: 'study' as const, startDate: null, dueDate: '2026-10-10', status: 'not_started' as const, isDday: false }
@@ -56,6 +56,13 @@ test('Section dates are optional and ordered when both exist', () => {
 test('Section progress counts only assigned tasks', () => {
   const assigned = { ...makeTask('s1', 'done', 'w1'), sectionId: 'section-1' }
   assert.deepEqual(sectionProgress('section-1', [assigned, makeTask('u1', 'done', 'w1')]), { done: 1, total: 1, percent: 100 })
+})
+
+test('Individual Tasks stack by due date, then stable position', () => {
+  const late = { ...makeTask('late', 'not_started', 'w1'), dueDate: '2026-09-26', position: 0 }
+  const earlySecond = { ...makeTask('early-2', 'not_started', 'w1'), dueDate: '2026-09-23', position: 2 }
+  const earlyFirst = { ...makeTask('early-1', 'done', 'w1'), dueDate: '2026-09-23', position: 1 }
+  assert.deepEqual(sortTasksByDate([late, earlySecond, earlyFirst]).map(task => task.id), ['early-1', 'early-2', 'late'])
 })
 
 test('deadline-only timeline uses a due-date marker', () => {
