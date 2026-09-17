@@ -25,6 +25,11 @@ function colorFor(item: CalendarItem, projects: Project[], workstreams: Workstre
   return parent?.subject?.color ?? categoryColor[item.value.category]
 }
 
+function colorForSection(section: Section, workstreams: Workstream[]) {
+  const parent = workstreams.find(workstream => workstream.id === section.workstreamId)
+  return parent?.subject?.color ?? categoryColor[parent?.category ?? 'other']
+}
+
 function Week({ start, items, projects, workstreams, sections, showSectionGroups, linkedHighlight, highlight, onHighlight, onCreate, onSelect, onSelectWorkstream }: {
   start: Date; items: CalendarItem[]; projects: Project[]; workstreams: Workstream[]; sections: Section[]; showSectionGroups: boolean; linkedHighlight: boolean; highlight: CalendarHighlight; onHighlight: (value: CalendarHighlight) => void; onCreate: (date: Date) => void; onSelect: (selection: Selection) => void; onSelectWorkstream: (workstream: Workstream) => void
 }) {
@@ -48,18 +53,47 @@ function Week({ start, items, projects, workstreams, sections, showSectionGroups
   const singlesByDay = days.map(day => {
     const key = isoDate(day)
     return items.filter(item => !isBar(item) && item.start === item.end && item.start === key)
-      .sort((a, b) => a.kind === 'event' && b.kind !== 'event' ? -1 : 0)
+      .sort((a, b) => {
+        const rank = (item: CalendarItem) => item.kind === 'event' ? 0 : item.kind === 'workstream' ? 1 : item.value.sectionId ? 2 : 3
+        const kindOrder = rank(a) - rank(b)
+        if (kindOrder) return kindOrder
+        if (a.kind === 'task' && b.kind === 'task') {
+          const aSection = sections.find(section => section.id === a.value.sectionId)
+          const bSection = sections.find(section => section.id === b.value.sectionId)
+          const aWorkstream = workstreams.find(workstream => workstream.id === a.value.workstreamId)
+          const bWorkstream = workstreams.find(workstream => workstream.id === b.value.workstreamId)
+          return (aWorkstream?.position ?? Number.MAX_SAFE_INTEGER) - (bWorkstream?.position ?? Number.MAX_SAFE_INTEGER)
+            || (aSection?.position ?? Number.MAX_SAFE_INTEGER) - (bSection?.position ?? Number.MAX_SAFE_INTEGER)
+            || (a.value.sectionId ?? '').localeCompare(b.value.sectionId ?? '')
+            || a.value.position - b.value.position
+            || a.value.title.localeCompare(b.value.title)
+        }
+        return a.value.title.localeCompare(b.value.title)
+      })
   })
   const maxSingles = Math.max(0, ...singlesByDay.map(day => day.length))
   const height = Math.max(92, 38 + laneEnds.length * 23 + maxSingles * 23 + 9)
-  const visibleSectionGroups = sections.flatMap(section => {
-    const sectionTasks = items.filter((item): item is Extract<CalendarItem,{kind:'task'}> => item.kind === 'task' && item.value.sectionId === section.id && item.start <= weekEnd && item.end >= weekStart)
-    if (!sectionTasks.length) return []
-    const first = sectionTasks.reduce((value,item)=>item.start<value?item.start:value,sectionTasks[0].start)
-    const last = sectionTasks.reduce((value,item)=>item.end>value?item.end:value,sectionTasks[0].end)
-    const segmentStart = first < weekStart ? weekStart : first; const segmentEnd = last > weekEnd ? weekEnd : last
-    return [{ section, startColumn: days.findIndex(day=>isoDate(day)===segmentStart), endColumn: days.findIndex(day=>isoDate(day)===segmentEnd) }]
+  const singleSectionGroups = singlesByDay.flatMap((dayItems, dayIndex) => {
+    const groups: { section: Section; startColumn: number; endColumn: number; top: number; height: number; key: string }[] = []
+    let index = 0
+    while (index < dayItems.length) {
+      const item = dayItems[index]
+      if (item.kind !== 'task' || !item.value.sectionId) { index += 1; continue }
+      const section = sections.find(candidate => candidate.id === item.value.sectionId)
+      if (!section) { index += 1; continue }
+      let end = index + 1
+      while (end < dayItems.length && dayItems[end].kind === 'task' && (dayItems[end] as Extract<CalendarItem,{kind:'task'}>).value.sectionId === section.id) end += 1
+      groups.push({ section, startColumn: dayIndex, endColumn: dayIndex, top: 32 + laneEnds.length * 23 + index * 23, height: (end - index) * 23 + 2, key: `single-${dayIndex}-${section.id}` })
+      index = end
+    }
+    return groups
   })
+  const spanSectionGroups = segments.flatMap(({ item, lane, startColumn, endColumn }) => {
+    if (item.kind !== 'task' || !item.value.sectionId) return []
+    const section = sections.find(candidate => candidate.id === item.value.sectionId)
+    return section ? [{ section, startColumn, endColumn, top: 32 + lane * 23, height: 25, key: `span-${item.value.id}` }] : []
+  })
+  const visibleSectionGroups = [...singleSectionGroups, ...spanSectionGroups]
   const related = (item: CalendarItem) => { if (!linkedHighlight || !highlight) return false; if (item.kind === 'workstream') return item.value.id === ('workstreamId' in highlight ? highlight.workstreamId : ''); if (item.kind !== 'task') return false; if (highlight.kind === 'task') return item.value.id === highlight.taskId || (Boolean(highlight.sectionId) && item.value.sectionId === highlight.sectionId); if (highlight.kind === 'section') return item.value.sectionId === highlight.sectionId; return item.value.workstreamId === highlight.workstreamId }
   const planningDimmed = (item: CalendarItem) => Boolean(linkedHighlight && highlight && item.kind !== 'event' && !related(item))
   const highlightFor = (item: CalendarItem): CalendarHighlight => item.kind === 'workstream' ? {kind:'workstream',workstreamId:item.value.id} : item.kind === 'task' ? {kind:'task',taskId:item.value.id,sectionId:item.value.sectionId,workstreamId:item.value.workstreamId} : null
@@ -85,7 +119,7 @@ function Week({ start, items, projects, workstreams, sections, showSectionGroups
         <div className="month-items" style={{ paddingTop: laneEnds.length * 23 }}>{singlesByDay[index].map(item => <span className="calendar-single" key={`${item.kind}-${item.value.id}`}>{entry(item)}</span>)}</div>
       </div>
     })}</div>
-    {showSectionGroups&&<div className="calendar-section-groups">{visibleSectionGroups.map(({section,startColumn,endColumn})=>{const active=highlight?.kind==='workstream'?highlight.workstreamId===section.workstreamId:'sectionId'in (highlight??{})&&(highlight as {sectionId?:string}).sectionId===section.id;return <button type="button" key={section.id} className={active?'active':''} style={{'--group-left':startColumn,'--group-width':endColumn-startColumn+1} as CSSProperties} onMouseEnter={()=>onHighlight({kind:'section',sectionId:section.id,workstreamId:section.workstreamId})} onMouseLeave={()=>onHighlight(null)} onFocus={()=>onHighlight({kind:'section',sectionId:section.id,workstreamId:section.workstreamId})} onBlur={()=>onHighlight(null)}><span>{section.title}</span></button>})}</div>}
+    {showSectionGroups&&<div className="calendar-section-groups">{visibleSectionGroups.map(({section,startColumn,endColumn,top,height:groupHeight,key})=>{const active=highlight?.kind==='workstream'?highlight.workstreamId===section.workstreamId:'sectionId'in (highlight??{})&&(highlight as {sectionId?:string}).sectionId===section.id;return <button type="button" key={key} className={active?'active':''} style={{'--group-left':startColumn,'--group-width':endColumn-startColumn+1,'--group-top':`${top}px`,'--group-height':`${groupHeight}px`,'--group-color':colorForSection(section,workstreams)} as CSSProperties} onMouseEnter={()=>onHighlight({kind:'section',sectionId:section.id,workstreamId:section.workstreamId})} onMouseLeave={()=>onHighlight(null)} onFocus={()=>onHighlight({kind:'section',sectionId:section.id,workstreamId:section.workstreamId})} onBlur={()=>onHighlight(null)}><span>{section.title}</span></button>})}</div>}
     <div className="calendar-spans" aria-label="여러 날 일정">{segments.map(({ item, lane, startColumn, endColumn, startsHere, endsHere }) => <span key={`${item.kind}-${item.value.id}`} className={`calendar-span-position${startsHere ? ' starts-here' : ''}${endsHere ? ' ends-here' : ''}`} style={{ '--span-left': startColumn, '--span-width': endColumn - startColumn + 1, '--span-lane': lane } as CSSProperties}>{entry(item, true)}</span>)}</div>
   </div>
 }
