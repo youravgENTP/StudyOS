@@ -23,6 +23,7 @@ export default function App() {
         <Route path="dosage" element={<CaffeinePage />} />
         <Route path="caffeine" element={<Navigate to="/dosage" replace />} />
         <Route path="tasks" element={<TasksPage />} />
+        <Route path="tasks/calendar" element={<CalendarPage preset="tasks" />} />
         <Route path="tasks/:projectId" element={<ProjectDetailPage />} />
         <Route path="routine" element={<RoutinePage />} />
         <Route path="habits" element={<HabitsPage />} />

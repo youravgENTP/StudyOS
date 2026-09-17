@@ -4,11 +4,13 @@ export type Habit = {
   color: string
   weekdays: number[]
   createdAt: string
+  trackingMode: 'binary' | 'counter'
 }
 
 export type HabitCompletion = {
   habitId: string
   date: string
+  value: number
 }
 
 export const shortWeekdays = [

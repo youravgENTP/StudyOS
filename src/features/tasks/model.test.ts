@@ -1,15 +1,15 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { collectDdayEntities, dateWarnings, isEntityVisibleOnDate, parseExpandedIds, projectProgress, timelinePlacement, validateProjectInput, validateTaskInput, validateWorkstreamInput, workstreamProgress } from './model.ts'
+import { collectDdayEntities, dateWarnings, isEntityVisibleOnDate, parseExpandedIds, projectProgress, sectionProgress, timelinePlacement, validateProjectInput, validateSectionInput, validateTaskInput, validateWorkstreamInput, workstreamProgress } from './model.ts'
 import type { Project, ProjectInput, Task, TaskInput, Workstream, WorkstreamInput } from './types.ts'
 
 const base = { title: 'Item', description: null, category: 'study' as const, startDate: null, dueDate: '2026-10-10', status: 'not_started' as const, isDday: false }
 const projectInput: ProjectInput = { ...base }
 const workstreamInput: WorkstreamInput = { ...base, projectId: 'p1', subjectId: null, showOnCalendar: true }
-const taskInput: TaskInput = { ...base, projectId: 'p1', workstreamId: null, showOnCalendar: true, isDeadline: false }
+const taskInput: TaskInput = { ...base, projectId: 'p1', workstreamId: null, sectionId: null, showOnCalendar: true, isDeadline: false }
 const project: Project = { ...base, id: 'p1', position: 0, completedAt: null, createdAt: '2026-09-10', status: 'in_progress' }
 const workstream: Workstream = { ...base, id: 'w1', projectId: 'p1', subjectId: null, subject: null, showOnCalendar: true, position: 0, completedAt: null, createdAt: '2026-09-10' }
-const makeTask = (id: string, status: Task['status'], workstreamId: string | null): Task => ({ ...base, id, projectId: 'p1', workstreamId, showOnCalendar: true, isDeadline: false, status, completedAt: status === 'done' ? '2026-09-10' : null, position: 0, createdAt: '2026-09-10' })
+const makeTask = (id: string, status: Task['status'], workstreamId: string | null): Task => ({ ...base, id, projectId: 'p1', workstreamId, sectionId: null, showOnCalendar: true, isDeadline: false, status, completedAt: status === 'done' ? '2026-09-10' : null, position: 0, createdAt: '2026-09-10' })
 
 test('Task requires Project while Workstream remains optional', () => {
   assert.equal(validateTaskInput({ ...taskInput, projectId: '' }), 'Project is required.')
@@ -47,6 +47,16 @@ test('100 percent progress does not mutate explicit parent status', () => {
 })
 
 test('Workstream subject is optional', () => assert.equal(validateWorkstreamInput({ ...workstreamInput, subjectId: null }), null))
+
+test('Section dates are optional and ordered when both exist', () => {
+  assert.equal(validateSectionInput({ workstreamId: 'w1', title: 'Review', description: null, startDate: null, dueDate: null, status: 'not_started' }), null)
+  assert.match(validateSectionInput({ workstreamId: 'w1', title: 'Review', description: null, startDate: '2026-10-12', dueDate: '2026-10-10', status: 'not_started' }) ?? '', /cannot be after/)
+})
+
+test('Section progress counts only assigned tasks', () => {
+  const assigned = { ...makeTask('s1', 'done', 'w1'), sectionId: 'section-1' }
+  assert.deepEqual(sectionProgress('section-1', [assigned, makeTask('u1', 'done', 'w1')]), { done: 1, total: 1, percent: 100 })
+})
 
 test('deadline-only timeline uses a due-date marker', () => {
   const placement = timelinePlacement({ startDate: null, dueDate: '2026-10-10' }, '2026-10-01', '2026-10-20')

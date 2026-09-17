@@ -34,7 +34,7 @@ export function CalendarComposer({ date, projects, workstreams, subjects, subcat
     event.preventDefault(); setSaving(true); setError('')
     try {
       if (kind === 'task') {
-        const input = { title, description: description || null, category, projectId, workstreamId: workstreamId || null, startDate: startDate || null, dueDate, status, isDday: isMajor, showOnCalendar: taskEditing?.showOnCalendar ?? true, isDeadline: taskEditing?.isDeadline ?? false }
+        const input = { title, description: description || null, category, projectId, workstreamId: workstreamId || null, sectionId: taskEditing?.sectionId ?? null, startDate: startDate || null, dueDate, status, isDday: isMajor, showOnCalendar: taskEditing?.showOnCalendar ?? true, isDeadline: taskEditing?.isDeadline ?? false }
         if (taskEditing) await updateTask(taskEditing.id, input)
         else await createTask(input)
       } else {

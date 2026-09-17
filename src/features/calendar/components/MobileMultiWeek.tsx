@@ -1,6 +1,6 @@
 import { Plus } from 'lucide-react'
 import { useMemo, useState, type CSSProperties } from 'react'
-import type { Project, Task, Workstream } from '../../tasks/types'
+import type { Project, Section, Task, Workstream } from '../../tasks/types'
 import { taskCategoryLabels } from '../../tasks/types'
 import { addDays, isoDate, sameDate } from '../date'
 import type { CalendarEvent } from '../types'
@@ -14,10 +14,10 @@ type MobileItem =
 
 const categoryColor = { study: '#719ce3', personal: '#a88bd8', errands: '#d4a15c', development: '#6eae91', other: '#89909a' }
 
-function itemLabel(item: MobileItem) {
+function itemLabel(item: MobileItem, sections: Section[]) {
   if (item.kind === 'event') return item.value.subcategory?.name ?? item.value.subject?.name ?? taskCategoryLabels[item.value.category]
   if (item.kind === 'workstream') return `Workstream · ${taskCategoryLabels[item.value.category]}`
-  return `Task · ${taskCategoryLabels[item.value.category]}`
+  return `${item.value.sectionId ? sections.find(section => section.id === item.value.sectionId)?.title ?? 'Section' : 'Ungrouped'} · Task · ${taskCategoryLabels[item.value.category]}`
 }
 
 function itemTime(item: MobileItem) {
@@ -27,8 +27,8 @@ function itemTime(item: MobileItem) {
   return end ? `${start}–${end}` : start
 }
 
-export function MobileMultiWeek({ start, dayCount, tasks, workstreams, projects, events, filters, onCreate, onSelect, onSelectWorkstream }: {
-  start: Date; dayCount: number; tasks: Task[]; workstreams: Workstream[]; projects: Project[]; events: CalendarEvent[]; filters: CalendarFilters; onCreate: (date: Date) => void; onSelect: (selection: Selection) => void; onSelectWorkstream: (workstream: Workstream) => void
+export function MobileMultiWeek({ start, dayCount, tasks, workstreams, sections, projects, events, filters, onCreate, onSelect, onSelectWorkstream }: {
+  start: Date; dayCount: number; tasks: Task[]; workstreams: Workstream[]; sections: Section[]; projects: Project[]; events: CalendarEvent[]; filters: CalendarFilters; onCreate: (date: Date) => void; onSelect: (selection: Selection) => void; onSelectWorkstream: (workstream: Workstream) => void
 }) {
   const today = new Date()
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
@@ -78,10 +78,10 @@ export function MobileMultiWeek({ start, dayCount, tasks, workstreams, projects,
         </div>
         {selected && <div className="mobile-day-agenda">
           <header><div><strong>{new Intl.DateTimeFormat('ko', { month: 'long', day: 'numeric', weekday: 'long' }).format(selected)}</strong><span>{selectedItems.length}개 항목</span></div><button type="button" onClick={() => onCreate(selected)} aria-label={`${isoDate(selected)} 새 일정`}><Plus /></button></header>
-          {selectedItems.length ? <div className="mobile-agenda-list">{selectedItems.map(item => <button type="button" className="mobile-agenda-item" key={`${item.kind}-${item.value.id}`} onClick={() => activate(item)}>
+          {selectedItems.length ? <div className="mobile-agenda-list">{selectedItems.map(item => <button type="button" className={`mobile-agenda-item ${item.kind}`} key={`${item.kind}-${item.value.id}`} onClick={() => activate(item)}>
             <i style={{ '--item-color': item.color } as CSSProperties} />
             <span className="mobile-agenda-time">{itemTime(item)}</span>
-            <span><strong>{item.value.title}</strong><small>{itemLabel(item)}{item.start !== item.end ? ` · ${item.start}–${item.end}` : ''}</small></span>
+            <span><strong>{item.value.title}</strong><small>{itemLabel(item, sections)}{item.start !== item.end ? ` · ${item.start}–${item.end}` : ''}</small></span>
           </button>)}</div> : <button type="button" className="mobile-agenda-empty" onClick={() => onCreate(selected)}><Plus /> 이 날짜에 일정 추가</button>}
         </div>}
       </section>

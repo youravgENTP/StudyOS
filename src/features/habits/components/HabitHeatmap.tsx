@@ -2,6 +2,7 @@ import type {
   Habit,
   HabitCompletion,
 } from '../types'
+import { heatmapIntensity } from '../model'
 
 function iso(date: Date) {
   return date.toLocaleDateString('en-CA')
@@ -90,20 +91,16 @@ function monthLabel(
 export function HabitHeatmap({
   habit,
   completions,
+  onChange,
 }: {
   habit: Habit
   completions: HabitCompletion[]
+  onChange: (date: string, value: number) => void
 }) {
   const weeks = buildWeeks(habit.createdAt)
 
-  const completed = new Set(
-    completions
-      .filter(
-        completion =>
-          completion.habitId === habit.id,
-      )
-      .map(completion => completion.date),
-  )
+  const records = new Map(completions.filter(record => record.habitId === habit.id).map(record => [record.date, record.value]))
+  const recentMax = Math.max(1, ...Array.from(records.values()))
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -144,15 +141,16 @@ export function HabitHeatmap({
               const scheduled =
                 habit.weekdays.includes(dayIndex)
 
-              const isComplete =
-                completed.has(key)
+              const value = records.get(key) ?? 0
+              const isComplete = value > 0
 
               const future =
                 date.getTime() >
                 today.getTime()
 
               return (
-                <span
+                <button
+                  type="button"
                   key={key}
                   className={[
                     'habit-cell',
@@ -171,16 +169,14 @@ export function HabitHeatmap({
                       ? {
                           background:
                             habit.color,
+                          opacity: habit.trackingMode === 'counter' ? .16 + .168 * heatmapIntensity(value, recentMax) : 1,
                         }
                       : undefined
                   }
-                  title={`${key}${
-                    scheduled
-                      ? isComplete
-                        ? ' · complete'
-                        : ' · scheduled'
-                      : ' · not scheduled'
-                  }`}
+                  title={`${key} · ${value}${scheduled ? '' : ' · not scheduled'}`}
+                  aria-label={`${key}, value ${value}. ${habit.trackingMode === 'binary' ? 'Toggle value' : 'Click to increment; Shift-click to decrement'}`}
+                  disabled={future}
+                  onClick={event => onChange(key, habit.trackingMode === 'binary' ? (value ? 0 : 1) : event.shiftKey ? Math.max(0, value - 1) : value + 1)}
                 />
               )
             }),

@@ -3,6 +3,8 @@
   gap: 18px;
 }
 
+.habit-mode-field{display:grid;gap:6px;color:var(--muted);font-size:12px}.habit-mode-field select{padding:8px;border:1px solid var(--border);border-radius:7px;color:var(--text);background:var(--surface-muted)}.habit-counter{display:grid;grid-template-columns:30px 34px 30px;align-items:center;text-align:center}.habit-counter button{height:30px;border:1px solid var(--border);color:var(--text);background:var(--surface-muted)}.habit-counter button:first-child{border-radius:7px 0 0 7px}.habit-counter button:last-child{border-radius:0 7px 7px 0}.habit-cell{padding:0;border:0;cursor:pointer}.habit-cell:focus-visible{outline:2px solid var(--accent);outline-offset:1px}.habit-cell:disabled{cursor:default}
+
 .habit-card {
   display: grid;
   gap: 18px;

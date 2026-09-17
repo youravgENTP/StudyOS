@@ -24,11 +24,13 @@ export type PlanningEntity = {
 
 export type Project = PlanningEntity
 export type Workstream = PlanningEntity & { projectId: string; subjectId: string | null; subject: Subject | null; showOnCalendar: boolean }
-export type Task = PlanningEntity & { projectId: string; workstreamId: string | null; showOnCalendar: boolean; isDeadline: boolean }
+export type Section = Omit<PlanningEntity, 'dueDate' | 'isDday' | 'completedAt'> & { workstreamId: string; dueDate: string | null; archivedAt: string | null }
+export type Task = PlanningEntity & { projectId: string; workstreamId: string | null; sectionId: string | null; showOnCalendar: boolean; isDeadline: boolean }
 
 export type ProjectInput = Pick<Project, 'title' | 'description' | 'category' | 'startDate' | 'dueDate' | 'status' | 'isDday'>
 export type WorkstreamInput = Pick<Workstream, 'projectId' | 'subjectId' | 'title' | 'description' | 'category' | 'startDate' | 'dueDate' | 'status' | 'isDday' | 'showOnCalendar'>
-export type TaskInput = Pick<Task, 'projectId' | 'workstreamId' | 'title' | 'description' | 'category' | 'startDate' | 'dueDate' | 'status' | 'isDday' | 'showOnCalendar' | 'isDeadline'>
+export type SectionInput = Pick<Section, 'workstreamId' | 'title' | 'description' | 'startDate' | 'dueDate' | 'status'>
+export type TaskInput = Pick<Task, 'projectId' | 'workstreamId' | 'sectionId' | 'title' | 'description' | 'category' | 'startDate' | 'dueDate' | 'status' | 'isDday' | 'showOnCalendar' | 'isDeadline'>
 export type DdayEntity = { kind: 'project' | 'workstream' | 'task'; id: string; title: string; dueDate: string; status: TaskStatus }
 
 export const taskCategoryLabels: Record<TaskCategory, string> = {

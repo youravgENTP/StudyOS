@@ -1,4 +1,4 @@
-import type { DdayEntity, PlanningEntity, Project, ProjectInput, Task, TaskInput, TaskStatus, Workstream, WorkstreamInput } from './types'
+import type { DdayEntity, PlanningEntity, Project, ProjectInput, SectionInput, Task, TaskInput, TaskStatus, Workstream, WorkstreamInput } from './types'
 
 const required = (value: string) => Boolean(value.trim())
 const dateOrderValid = (startDate: string | null, dueDate: string) => !startDate || startDate <= dueDate
@@ -26,6 +26,13 @@ export function validateTaskInput(input: TaskInput) {
   return null
 }
 
+export function validateSectionInput(input: SectionInput) {
+  if (!input.workstreamId) return 'Workstream is required.'
+  if (!required(input.title)) return 'Section title is required.'
+  if (input.startDate && input.dueDate && input.startDate > input.dueDate) return 'Start date cannot be after due date.'
+  return null
+}
+
 export function progressForTasks(tasks: Task[]) {
   const counted = tasks.filter(task => task.status !== 'dropped')
   const done = counted.filter(task => task.status === 'done').length
@@ -36,6 +43,10 @@ export function workstreamProgress(workstreamId: string, tasks: Task[]) {
   return progressForTasks(tasks.filter(task => task.workstreamId === workstreamId))
 }
 
+export function sectionProgress(sectionId: string, tasks: Task[]) {
+  return progressForTasks(tasks.filter(task => task.sectionId === sectionId))
+}
+
 export function projectProgress(projectId: string, tasks: Task[]) {
   return progressForTasks(tasks.filter(task => task.projectId === projectId))
 }
@@ -44,15 +55,17 @@ export function completionPatch(status: TaskStatus, now = new Date()) {
   return { status, completedAt: status === 'done' ? now.toISOString() : null }
 }
 
-export function dateWarnings(entity: Pick<PlanningEntity, 'startDate' | 'dueDate'>, project: Pick<Project, 'startDate' | 'dueDate'>, workstream?: Pick<Workstream, 'startDate' | 'dueDate'> | null) {
+export function dateWarnings(entity: { startDate: string | null; dueDate: string | null }, project: Pick<Project, 'startDate' | 'dueDate'>, workstream?: Pick<Workstream, 'startDate' | 'dueDate'> | null, section?: { startDate: string | null; dueDate: string | null } | null) {
   const warnings: string[] = []
   if (project.startDate && entity.startDate && entity.startDate < project.startDate) warnings.push('Starts before Project start date.')
-  if (entity.dueDate > project.dueDate) warnings.push('Extends beyond Project dates.')
+  if (entity.dueDate && entity.dueDate > project.dueDate) warnings.push('Extends beyond Project dates.')
   if (workstream?.startDate && entity.startDate && entity.startDate < workstream.startDate) warnings.push('Starts before Workstream start date.')
-  if (workstream && entity.dueDate > workstream.dueDate) {
+  if (workstream && entity.dueDate && entity.dueDate > workstream.dueDate) {
     const days = Math.round((new Date(`${entity.dueDate}T00:00:00`).getTime() - new Date(`${workstream.dueDate}T00:00:00`).getTime()) / 86_400_000)
     warnings.push(`Ends ${days} day${days === 1 ? '' : 's'} after Workstream deadline.`)
   }
+  if (section?.startDate && entity.startDate && entity.startDate < section.startDate) warnings.push('Starts before Section start date.')
+  if (section?.dueDate && entity.dueDate && entity.dueDate > section.dueDate) warnings.push('Extends beyond Section dates.')
   return warnings
 }
 

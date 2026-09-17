@@ -6,7 +6,7 @@ import {
 import {
   archiveHabit,
   saveHabit,
-  setHabitComplete,
+  setHabitValue,
 } from '../api/habits'
 import {
   shortWeekdays,
@@ -54,6 +54,7 @@ export function HabitCard({
   const [days, setDays] = useState<number[]>(
     habit?.weekdays ?? ALL_DAYS,
   )
+  const [trackingMode, setTrackingMode] = useState<Habit['trackingMode']>(habit?.trackingMode ?? 'binary')
 
   const [saving, setSaving] =
     useState(false)
@@ -66,6 +67,7 @@ export function HabitCard({
     setName(habit.name)
     setColor(habit.color)
     setDays(habit.weekdays)
+    setTrackingMode(habit.trackingMode)
   }, [habit])
 
   const today = new Date()
@@ -76,13 +78,8 @@ export function HabitCard({
     ? habit.weekdays.includes(todayDay)
     : false
 
-  const completeToday = habit
-    ? completions.some(
-        completion =>
-          completion.habitId === habit.id &&
-          completion.date === todayKey,
-      )
-    : false
+  const todayValue = habit ? completions.find(record => record.habitId === habit.id && record.date === todayKey)?.value ?? 0 : 0
+  const completeToday = todayValue > 0
 
   function toggleDay(day: number) {
     setDays(current =>
@@ -101,6 +98,7 @@ export function HabitCard({
     setName(habit.name)
     setColor(habit.color)
     setDays(habit.weekdays)
+    setTrackingMode(habit.trackingMode)
     setError('')
     setEditing(false)
   }
@@ -122,6 +120,7 @@ export function HabitCard({
         name,
         color,
         days,
+        trackingMode,
         habit?.id,
       )
 
@@ -212,6 +211,8 @@ export function HabitCard({
             )}
           </div>
 
+          <label className="habit-mode-field">Tracking<select value={trackingMode} onChange={event => setTrackingMode(event.target.value as Habit['trackingMode'])}><option value="binary">Binary · done / not done</option><option value="counter">Counter · multiple times</option></select></label>
+
           <div className="habit-card-form-actions">
             <button
               className="button primary"
@@ -284,7 +285,7 @@ export function HabitCard({
         </div>
 
         <div className="habit-card-controls">
-          {scheduledToday && (
+          {scheduledToday && habit.trackingMode === 'binary' && (
             <button
               type="button"
               className={`habit-complete-button${completeToday ? ' complete' : ''}`}
@@ -297,10 +298,10 @@ export function HabitCard({
                   : undefined
               }
               onClick={() =>
-                void setHabitComplete(
+                void setHabitValue(
                   habit.id,
                   todayKey,
-                  !completeToday,
+                  completeToday ? 0 : 1,
                 )
               }
               aria-label={
@@ -312,6 +313,8 @@ export function HabitCard({
               ✓
             </button>
           )}
+
+          {scheduledToday && habit.trackingMode === 'counter' && <div className="habit-counter" aria-label={`${habit.name} count for today`}><button type="button" onClick={() => void setHabitValue(habit.id, todayKey, todayValue - 1)} disabled={todayValue === 0}>−</button><strong>{todayValue}</strong><button type="button" onClick={() => void setHabitValue(habit.id, todayKey, todayValue + 1)}>+</button></div>}
 
           <button
             className="text-button"
@@ -325,6 +328,7 @@ export function HabitCard({
       <HabitHeatmap
         habit={habit}
         completions={completions}
+        onChange={(date, value) => void setHabitValue(habit.id, date, value)}
       />
     </section>
   )

@@ -2,17 +2,15 @@
 id: calendar
 type: feature
 title: Calendar
-summary: Full-screen ten-week planning surface for events, Workstream spans, and Task spans or deadlines.
+summary: Shared temporal renderer for schedule events and planning hierarchy.
 ---
 
 # Calendar
 
-Calendar is the time-based operational surface for Events and the Tasks hierarchy. The desktop and mobile layouts devote the available page area to an Apple Calendar-inspired, continuous ten-week grid. The viewport always remains ten weeks long. Stacked up/down chevrons shift its start one week earlier or later, while Today resets the start to the current week; there are no previous/next range arrow buttons. The heading describes the full visible month range.
+Calendar is the temporal visualization surface. The main route defaults to Everything; Tasks Calendar invokes the same page and renderers with the Tasks-only preset. Source controls can switch between Everything, Tasks only, and Schedule only, and independently toggle Events, Workstreams, Tasks, and completed Tasks.
 
-Clicking empty space in any date opens a date-prefilled composer. The composer can create either an Event—with all-day or timed behavior—or a Task with a required Project, optional Workstream, optional start, and required due date. Clicking an existing Event or Task reopens the same surface for editing or deletion. Clicking a Workstream opens its Project Detail view.
+Ordinary Events retain normal typography and their existing single-day or filled-span shapes. Tasks-managed labels are italic. Individual Tasks reuse Event temporal shapes. Workstreams use a thin range-line treatment instead of a filled bar. Sections are not Calendar items: the desktop renderer derives quiet dashed per-week grouping fragments from visible Tasks. Empty Sections produce no outline. A Section without dates is therefore naturally bounded by its visible Tasks.
 
-Calendar owns `events` records but does not duplicate planning records. Events can cover one or many days. It renders multi-day Events, visible Workstreams, and started Tasks as continuous week-spanning bars; spans wrap only at week boundaries and always occupy lanes above one-day items. Week rows grow to fit all lanes and items rather than truncating them. Deadline-only Tasks and Workstreams appear only on their due date. Project bars stay out of Calendar to avoid long-range clutter. D-Day styling remains available across displayed hierarchy levels. Calendar queries through the Tasks feature boundary and refreshes when either feature changes.
+React highlight state links fragments semantically. Focusing or hovering a Task highlights its Section peers and parent Workstream; focusing a Section highlights its Tasks and Workstream; focusing a Workstream highlights all descendants and all visible week fragments. Section names fade in only when the group is active. Unrelated planning items are mildly dimmed. Mobile agenda rows expose Section or Ungrouped context in text because hover is unavailable.
 
-The sidebar has a three-state flow on Calendar: a collapsed rail, the main StudyOS navigation, and Calendar filters. In the main sidebar, `<<` collapses to the brand mark and `>>`, while `>>` advances to Calendar filters. The Calendar sidebar's `<<` returns to main navigation, so only one full sidebar is present at a time. Both expanded sidebars share the same width and directional transitions make switching or collapsing visually continuous. Calendar filters independently control Events, Workstreams, Tasks, Categories, and nested Event Subcategories. These controls affect only the current calendar view. A Workstream or Task's durable `show_on_calendar` setting determines whether it is eligible to appear at all.
-
-The week starts on Sunday by default. Settings can persistently switch the first day to Monday; the visible range and weekday headings react immediately.
+The ten-week range, week boundaries, lane calculations, event composer, source data, and desktop/mobile rendering are shared by both entry points. Calendar never copies planning records.

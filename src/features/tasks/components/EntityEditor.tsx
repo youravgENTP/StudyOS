@@ -1,12 +1,12 @@
 import { useState, type FormEvent } from 'react'
 import { X } from 'lucide-react'
 import { createProject, createTask, createWorkstream, deleteProject, deleteTask, deleteWorkstream, updateProject, updateTask, updateWorkstream } from '../api/tasks'
-import { academicTermLabels, taskCategoryLabels, taskStatusLabels, type PlanningEntity, type Project, type Subject, type Task, type TaskCategory, type TaskStatus, type Workstream } from '../types'
+import { academicTermLabels, taskCategoryLabels, taskStatusLabels, type PlanningEntity, type Project, type Section, type Subject, type Task, type TaskCategory, type TaskStatus, type Workstream } from '../types'
 
 type Kind = 'project' | 'workstream' | 'task'
-type Props = { kind: Kind; projects: Project[]; workstreams: Workstream[]; subjects: Subject[]; project?: Project; workstream?: Workstream | null; editing?: PlanningEntity | null; onClose: () => void }
+type Props = { kind: Kind; projects: Project[]; workstreams: Workstream[]; sections?: Section[]; subjects: Subject[]; project?: Project; workstream?: Workstream | null; section?: Section | null; editing?: PlanningEntity | null; onClose: () => void }
 
-export function EntityEditor({ kind, projects, workstreams, subjects, project, workstream, editing, onClose }: Props) {
+export function EntityEditor({ kind, projects, workstreams, sections = [], subjects, project, workstream, section, editing, onClose }: Props) {
   const existing = editing as Project | Workstream | Task | null | undefined
   const initialProjectId = kind === 'project' ? '' : (existing && 'projectId' in existing ? existing.projectId : project?.id ?? '')
   const initialWorkstreamId = kind === 'task' ? (existing && 'workstreamId' in existing ? existing.workstreamId ?? '' : workstream?.id ?? '') : ''
@@ -23,6 +23,7 @@ export function EntityEditor({ kind, projects, workstreams, subjects, project, w
   const [isDeadline, setIsDeadline] = useState(existing && 'isDeadline' in existing ? existing.isDeadline : false)
   const [projectId, setProjectId] = useState(initialProjectId)
   const [workstreamId, setWorkstreamId] = useState(initialWorkstreamId)
+  const [sectionId, setSectionId] = useState(kind === 'task' ? (existing && 'sectionId' in existing ? existing.sectionId ?? '' : section?.id ?? '') : '')
   const [subjectId, setSubjectId] = useState(existing && 'subjectId' in existing ? existing.subjectId ?? '' : '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -42,7 +43,7 @@ export function EntityEditor({ kind, projects, workstreams, subjects, project, w
         else await createWorkstream(input)
       }
       if (kind === 'task') {
-        const input = { ...common, projectId, workstreamId: workstreamId || null, showOnCalendar, isDeadline }
+        const input = { ...common, projectId, workstreamId: workstreamId || null, sectionId: sectionId || null, showOnCalendar, isDeadline }
         if (editing) await updateTask(editing.id, input)
         else await createTask(input)
       }
@@ -65,7 +66,8 @@ export function EntityEditor({ kind, projects, workstreams, subjects, project, w
       <button type="button" className="entity-editor-close" onClick={onClose} aria-label="Close"><X /></button>
       <div><span className="eyebrow">{editing ? 'Edit' : 'New'} {kind}</span><h2>{editing?.title ?? `Create ${kind}`}</h2></div>
       {kind !== 'project' && <label>Project<select value={projectId} required onChange={event => { setProjectId(event.target.value); setWorkstreamId('') }}><option value="">Select project</option>{projects.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>}
-      {kind === 'task' && <label>Workstream <small>Optional</small><select value={workstreamId} onChange={event => setWorkstreamId(event.target.value)}><option value="">Directly under project</option>{availableWorkstreams.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>}
+      {kind === 'task' && <label>Workstream <small>Optional</small><select value={workstreamId} onChange={event => { setWorkstreamId(event.target.value); setSectionId('') }}><option value="">Directly under project</option>{availableWorkstreams.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>}
+      {kind === 'task' && workstreamId && <label>Section <small>Optional · Ungrouped when empty</small><select value={sectionId} onChange={event => setSectionId(event.target.value)}><option value="">Ungrouped</option>{sections.filter(item => item.workstreamId === workstreamId).map(item => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>}
       {kind === 'workstream' && <label>Subject <small>Optional</small><select value={subjectId} onChange={event => setSubjectId(event.target.value)}><option value="">No subject</option>{subjects.map(item => <option key={item.id} value={item.id}>{item.academicYear}-{academicTermLabels[item.academicTerm]} · {item.name}</option>)}</select></label>}
       <label>Title<input autoFocus value={title} onChange={event => setTitle(event.target.value)} maxLength={240} required /></label>
       <label>Description <small>Optional</small><textarea value={description} onChange={event => setDescription(event.target.value)} maxLength={4000} /></label>

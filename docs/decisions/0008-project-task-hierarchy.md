@@ -1,9 +1,9 @@
-# ADR 0008: Model long-running work as a planning hierarchy
+# ADR 0008: Model long-running work as a four-level planning hierarchy
 
-**Status:** Accepted
+**Status:** Accepted (superseded in part by migration 0023)
 
-StudyOS models long-running work as Project → optional Workstream → Task. Every Task has a Project, while Workstreams and Subject links remain optional. Category is independent metadata at every level.
+StudyOS models planning as Project → Workstream → Section → Task. A Workstream always belongs to one Project; a Section always belongs to one Workstream. New Tasks should use a Section. Existing Tasks may keep a null `section_id` and are deliberately presented as Ungrouped rather than being silently moved into a synthetic Section.
 
-Due dates are required and start dates are optional. A null start date represents a deadline rather than an invented duration. Parent-child date containment is advisory so real schedules can exceed planning boundaries without data loss.
+Project, Workstream, and Task due dates remain required. Section start and due dates are independent and optional. Parent-child containment is advisory. Status is explicit, progress is derived from non-Dropped Tasks, and integer positions define stable sibling ordering.
 
-Status belongs to each record and is changed only by the user. Progress is derived from Done Tasks divided by non-Dropped Tasks; it never mutates parent status and is not stored. Explicit position values control sibling order. D-Day is a boolean on each level so Dashboard can project pinned deadlines without a polymorphic relation.
+Tasks owns management. Calendar owns temporal presentation. Both Calendar entry points use one rendering engine: Workstreams map to light range lines, Tasks reuse event shapes with italic typography, and Sections map to derived dashed grouping regions rather than stored calendar bars. Stable IDs drive cross-week hierarchy highlighting.
