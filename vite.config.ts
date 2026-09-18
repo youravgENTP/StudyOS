@@ -23,7 +23,9 @@ export default defineConfig(({ mode }) => {
         // production deploy. Publish a one-time cleanup worker that removes
         // the existing registration and all caches instead.
         selfDestroying: true,
-        registerType: 'autoUpdate',
+        // Cached older pages still request /sw.js and receive the cleanup
+        // worker, while fresh pages must not register it again on every load.
+        injectRegister: false,
         manifest: {
           name: 'StudyOS',
           short_name: 'StudyOS',
