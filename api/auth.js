@@ -1,12 +1,10 @@
 const APP_ORIGIN = 'https://study-os-eosin.vercel.app'
+const PUBLIC_AUTH_BASE_URL = 'https://ep-blue-haze-azz2fjzj.neonauth.c-3.ap-southeast-1.aws.neon.tech/neondb/auth'
 
 export const config = { runtime: 'edge' }
 
 export default async function handler(request) {
-  const authBaseUrl = process.env.NEON_AUTH_BASE_URL
-  if (!authBaseUrl) {
-    return Response.json({ message: 'Authentication proxy is not configured.' }, { status: 500 })
-  }
+  const authBaseUrl = process.env.NEON_AUTH_BASE_URL || PUBLIC_AUTH_BASE_URL
 
   const incomingUrl = new URL(request.url)
   const path = incomingUrl.searchParams.get('path') || ''
