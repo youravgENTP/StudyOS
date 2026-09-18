@@ -3,9 +3,10 @@ import { neonClient } from './client'
 export type EmailCredentials = { email: string; password: string }
 
 export const getSession = () => neonClient.auth.getSession()
-export const signInWithEmail = (credentials: EmailCredentials) => neonClient.auth.signIn.email(credentials)
+export const signInWithEmail = (credentials: EmailCredentials) =>
+  neonClient.auth.signIn.email({ ...credentials, fetchOptions: { throw: true } })
 export const signInWithGoogle = (callbackURL = window.location.origin) =>
-  neonClient.auth.signIn.social({ provider: 'google', callbackURL })
+  neonClient.auth.signIn.social({ provider: 'google', callbackURL, fetchOptions: { throw: true } })
 export const updateProfile = (name: string) =>
   neonClient.auth.updateUser({ name, fetchOptions: { throw: true } })
 export const requestPasswordReset = (email: string, redirectTo: string) =>
