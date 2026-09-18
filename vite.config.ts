@@ -15,6 +15,24 @@ export default defineConfig(({ mode }) => {
       'import.meta.env.VITE_NEON_AUTH_URL': JSON.stringify(authUrl),
       'import.meta.env.VITE_NEON_DATA_API_URL': JSON.stringify(dataApiUrl),
     },
-    plugins: [react(), VitePWA({registerType:'autoUpdate',manifest:{name:'StudyOS',short_name:'StudyOS',description:'A calm personal system for studying and daily planning.',theme_color:'#f6f7f8',background_color:'#f6f7f8',display:'standalone'}})],
+    plugins: [
+      react(),
+      VitePWA({
+        // StudyOS does not currently need offline caching. More importantly,
+        // an old app-shell cache can keep a stale auth client alive after a
+        // production deploy. Publish a one-time cleanup worker that removes
+        // the existing registration and all caches instead.
+        selfDestroying: true,
+        registerType: 'autoUpdate',
+        manifest: {
+          name: 'StudyOS',
+          short_name: 'StudyOS',
+          description: 'A calm personal system for studying and daily planning.',
+          theme_color: '#f6f7f8',
+          background_color: '#f6f7f8',
+          display: 'standalone',
+        },
+      }),
+    ],
   }
 })
