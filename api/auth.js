@@ -9,10 +9,14 @@ export default async function handler(request) {
   }
 
   const incomingUrl = new URL(request.url)
-  const path = incomingUrl.pathname.replace(/^\/api\/auth/, '') || '/'
-  if (path.includes('..')) return Response.json({ message: 'Invalid authentication path.' }, { status: 400 })
+  const path = incomingUrl.searchParams.get('path') || ''
+  if (!path || path.includes('..') || path.startsWith('/')) {
+    return Response.json({ message: 'Invalid authentication path.' }, { status: 400 })
+  }
+  incomingUrl.searchParams.delete('path')
 
-  const upstreamUrl = `${authBaseUrl.replace(/\/$/, '')}${path}${incomingUrl.search}`
+  const query = incomingUrl.searchParams.toString()
+  const upstreamUrl = `${authBaseUrl.replace(/\/$/, '')}/${path}${query ? `?${query}` : ''}`
   const headers = new Headers(request.headers)
   for (const name of ['host', 'content-length', 'connection', 'accept-encoding', 'x-forwarded-host', 'x-forwarded-proto']) headers.delete(name)
   headers.set('origin', APP_ORIGIN)
