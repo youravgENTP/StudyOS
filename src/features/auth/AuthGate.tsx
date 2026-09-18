@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { signInWithEmail, signInWithGoogle } from '../../lib/neon/auth'
 import { useAuth } from '../../providers/auth-context'
+import { ResetPasswordPanel } from './ResetPasswordPanel'
 import './auth.css'
 
 function message(error: unknown) {
@@ -12,6 +13,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
 
+  if (window.location.pathname === '/reset-password') return <ResetPasswordPanel />
   if (session.isPending) return <div className="auth-loading">Opening StudyOS…</div>
   if (session.data) return children
 
