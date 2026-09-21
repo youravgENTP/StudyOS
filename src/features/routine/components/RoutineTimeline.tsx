@@ -74,7 +74,7 @@ export function RoutineTimeline({ items, today, reorderable, templateItemFor, on
               {reorderable && <button disabled={index === 0} onClick={() => onMove(item, -1)} aria-label="Move up"><ChevronUp size={15} /></button>}
               {reorderable && <button disabled={index === items.length - 1} onClick={() => onMove(item, 1)} aria-label="Move down"><ChevronDown size={15} /></button>}
               <button onClick={() => { setAdding(false); setEditingRowId(item.id) }} aria-label="Edit"><Pencil size={15} /></button>
-              <button onClick={() => onDelete(templateItem)} aria-label="Delete"><Trash2 size={15} /></button>
+              <button onClick={() => onDelete(item)} aria-label="Delete"><Trash2 size={15} /></button>
             </div>}</>}
         </article>
       })}

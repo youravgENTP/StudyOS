@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import type { StudyOsTimetablePayload } from '../timetable/types.ts'
-import { availableMinutesForDate, buildDailyStats } from './model.ts'
+import { availableMinutesForDate, buildDailyStats, currentWeekDates, DAILY_PERSONAL_TIME_MINUTES } from './model.ts'
 
 const timetable: StudyOsTimetablePayload = {
   format: 'studyos-timetable', version: 1, exportedAt: '2026-09-14T00:00:00Z',
@@ -12,17 +12,27 @@ const timetable: StudyOsTimetablePayload = {
   ],
 }
 
-test('07:00–24:00 capacity subtracts merged timetable meetings', () => {
+test('07:00–24:00 capacity subtracts merged timetable meetings and three personal hours', () => {
   const monday = new Date('2026-09-14T12:00:00')
-  assert.equal(availableMinutesForDate(timetable, monday), 600)
+  assert.equal(DAILY_PERSONAL_TIME_MINUTES, 180)
+  assert.equal(availableMinutesForDate(timetable, monday), 420)
   const week = Array.from({ length: 7 }, (_, index) => { const date = new Date(monday); date.setDate(date.getDate() + index); return date })
-  assert.equal(week.reduce((sum, date) => sum + availableMinutesForDate(timetable, date), 0), 5760)
+  assert.equal(week.reduce((sum, date) => sum + availableMinutesForDate(timetable, date), 0), 4500)
+  assert.equal(availableMinutesForDate(null, monday), 840)
+})
+
+test('stats always use the current Monday through Sunday', () => {
+  const week = currentWeekDates(new Date('2026-09-17T08:00:00'))
+  assert.deepEqual(week.map(date => date.toLocaleDateString('en-CA')), [
+    '2026-09-14', '2026-09-15', '2026-09-16', '2026-09-17', '2026-09-18', '2026-09-19', '2026-09-20',
+  ])
+  assert.equal(currentWeekDates(new Date('2026-09-21T00:01:00'))[0].toLocaleDateString('en-CA'), '2026-09-21')
 })
 
 test('daily comparison keeps recorded study time independent from capacity', () => {
   const monday = new Date('2026-09-14T12:00:00')
   const stats = buildDailyStats([monday], timetable, { sessions: [{ id: 's1', durationSeconds: 7200, startedAt: '2026-09-14T08:00:00+09:00', endedAt: '2026-09-14T10:00:00+09:00', source: 'timer' }], caffeine: [{ id: 'c1', source: 'coffee', caffeineMg: 75, startedAt: '2026-09-14T08:00:00+09:00', durationMinutes: 60, note: null }] })
-  assert.equal(stats[0].availableMinutes, 600)
+  assert.equal(stats[0].availableMinutes, 420)
   assert.equal(stats[0].studySeconds, 7200)
   assert.equal(stats[0].caffeineMg, 75)
 })

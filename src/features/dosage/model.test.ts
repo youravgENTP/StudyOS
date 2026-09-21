@@ -64,10 +64,13 @@ test('Tmax and half-life ranges produce an uncertainty envelope', () => {
   assert.ok(result.min < result.max)
 })
 
-test('rolling chart uses a seven-day calculation lookback around a 24h/36h view', () => {
-  const now = new Date('2026-09-16T12:00:00Z')
+test('rolling chart keeps all of yesterday visible and uses a seven-day calculation lookback', () => {
+  const now = new Date(2026, 8, 16, 12)
   const window = medicationExposureTimeWindow(now)
-  assert.equal((now.getTime() - window.visibleStart.getTime()) / 3_600_000, 24)
+  assert.equal(window.visibleStart.getFullYear(), 2026)
+  assert.equal(window.visibleStart.getMonth(), 8)
+  assert.equal(window.visibleStart.getDate(), 15)
+  assert.equal(window.visibleStart.getHours(), 0)
   assert.equal((window.visibleEnd.getTime() - now.getTime()) / 3_600_000, 36)
   assert.equal((now.getTime() - window.fetchStart.getTime()) / 86_400_000, 7)
   assert.equal(window.fetchEnd.toISOString(), window.visibleEnd.toISOString())

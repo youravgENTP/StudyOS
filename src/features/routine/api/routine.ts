@@ -56,9 +56,13 @@ export async function saveTemplateItem(templateId: string, input: RoutineItemInp
   notify()
 }
 
-export async function deleteTemplateItem(id: string) {
-  const { error } = await dataApi.from('routine_template_items').delete().eq('id', id)
-  if (error) throw failure('delete template item', '루틴 항목을 삭제하지 못했습니다.', error)
+export async function deleteRoutineItem(templateItemId: string, instanceItemId?: string) {
+  if (instanceItemId) {
+    const instanceResult = await dataApi.from('routine_instance_items').delete().eq('id', instanceItemId).select('id')
+    if (instanceResult.error || !instanceResult.data?.length) throw failure('delete daily routine item', '오늘의 루틴 항목을 삭제하지 못했습니다.', instanceResult.error)
+  }
+  const templateResult = await dataApi.from('routine_template_items').delete().eq('id', templateItemId).select('id')
+  if (templateResult.error || !templateResult.data?.length) throw failure('delete template item', '루틴 항목을 삭제하지 못했습니다.', templateResult.error)
   notify()
 }
 

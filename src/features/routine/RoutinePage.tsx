@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { deleteTemplateItem, getDailyRoutine, getTemplate, listTemplateItems, onRoutineChanged, reorderTemplateItem, reorderTodayRoutineItem, saveTemplateItem, setRoutineItemCompleted } from './api/routine'
+import { deleteRoutineItem, getDailyRoutine, getTemplate, listTemplateItems, onRoutineChanged, reorderTemplateItem, reorderTodayRoutineItem, saveTemplateItem, setRoutineItemCompleted } from './api/routine'
 import { RoutineTimeline } from './components/RoutineTimeline'
 import { weekdays, type RoutineItem, type RoutineItemInput } from './types'
 import './routine.css'
@@ -53,7 +53,9 @@ export function RoutinePage() {
   async function remove(item: RoutineItem) {
     if (!window.confirm(`Delete “${item.title}” from the ${weekdays[weekday]} template?`)) return
     try {
-      await deleteTemplateItem(item.id)
+      const templateItem = templateItemFor(item)
+      if (!templateItem) return
+      await deleteRoutineItem(templateItem.id, isToday ? item.id : undefined)
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '루틴 항목을 삭제하지 못했습니다.')
     }

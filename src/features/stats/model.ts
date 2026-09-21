@@ -3,6 +3,7 @@ import type { StatsSourceData } from './types'
 
 export const AWAKE_START_MINUTE = 7 * 60
 export const AWAKE_END_MINUTE = 24 * 60
+export const DAILY_PERSONAL_TIME_MINUTES = 3 * 60
 
 export const localDateKey = (date: Date) => date.toLocaleDateString('en-CA')
 
@@ -11,11 +12,22 @@ export function dateRangeEndingAt(end: Date, count: number) {
   return Array.from({ length: count }, () => { const value = new Date(cursor); cursor.setDate(cursor.getDate() + 1); return value })
 }
 
+export function currentWeekDates(date: Date) {
+  const monday = new Date(date)
+  monday.setHours(12, 0, 0, 0)
+  monday.setDate(monday.getDate() - (monday.getDay() === 0 ? 6 : monday.getDay() - 1))
+  return Array.from({ length: 7 }, (_, index) => {
+    const value = new Date(monday)
+    value.setDate(monday.getDate() + index)
+    return value
+  })
+}
+
 function isoWeekday(date: Date) { return date.getDay() === 0 ? 7 : date.getDay() }
 
 export function availableMinutesForDate(timetable: StudyOsTimetablePayload | null, date: Date) {
   const gross = AWAKE_END_MINUTE - AWAKE_START_MINUTE
-  if (!timetable) return gross
+  if (!timetable) return gross - DAILY_PERSONAL_TIME_MINUTES
   const intervals = timetable.subjects.flatMap(subject => subject.meetings)
     .filter(meeting => meeting.weekday === isoWeekday(date))
     .map(meeting => [Math.max(AWAKE_START_MINUTE, meeting.startMinute), Math.min(AWAKE_END_MINUTE, meeting.endMinute)] as const)
@@ -26,7 +38,7 @@ export function availableMinutesForDate(timetable: StudyOsTimetablePayload | nul
     if (previous && start <= previous[1]) previous[1] = Math.max(previous[1], end)
     else merged.push([start, end])
   }
-  return gross - merged.reduce((total, [start, end]) => total + end - start, 0)
+  return Math.max(0, gross - DAILY_PERSONAL_TIME_MINUTES - merged.reduce((total, [start, end]) => total + end - start, 0))
 }
 
 export type DailyStat = {

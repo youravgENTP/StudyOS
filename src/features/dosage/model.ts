@@ -5,12 +5,14 @@ const HOUR = 60 * MINUTE
 const DAY = 24 * HOUR
 
 export const MEDICATION_EXPOSURE_LOOKBACK_DAYS = 7
-export const MEDICATION_EXPOSURE_PAST_HOURS = 24
 export const MEDICATION_EXPOSURE_FUTURE_HOURS = 36
 
 export function medicationExposureTimeWindow(now: Date) {
+  const visibleStart = new Date(now)
+  visibleStart.setDate(visibleStart.getDate() - 1)
+  visibleStart.setHours(0, 0, 0, 0)
   return {
-    visibleStart: new Date(now.getTime() - MEDICATION_EXPOSURE_PAST_HOURS * HOUR),
+    visibleStart,
     visibleEnd: new Date(now.getTime() + MEDICATION_EXPOSURE_FUTURE_HOURS * HOUR),
     fetchStart: new Date(now.getTime() - MEDICATION_EXPOSURE_LOOKBACK_DAYS * DAY),
     fetchEnd: new Date(now.getTime() + MEDICATION_EXPOSURE_FUTURE_HOURS * HOUR),

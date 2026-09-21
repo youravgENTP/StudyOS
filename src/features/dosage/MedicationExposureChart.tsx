@@ -49,7 +49,9 @@ export function MedicationExposureChart({
       ? item.pkProfiles.filter(profile => profile.tmaxMinMinutes !== null && profile.halfLifeMinMinutes !== null).map(profile => ({ item, profile, label: seriesLabel(item, profile), color: '' }))
       : [])
       .map((series, index) => ({ ...series, color: seriesColors[index % seriesColors.length] }))
-    const sampleTimes = Array.from({ length: 361 }, (_, index) => new Date(start.getTime() + index * 10 * 60_000))
+    const sampleInterval = 10 * 60_000
+    const sampleCount = Math.ceil((end.getTime() - start.getTime()) / sampleInterval) + 1
+    const sampleTimes = Array.from({ length: sampleCount }, (_, index) => new Date(Math.min(end.getTime(), start.getTime() + index * sampleInterval)))
     const ranges = definitions.map(series => sampleTimes.map(time => medicationExposureRangeAt(intakes, series.item, series.profile, time)!))
     const highestValue = Math.max(100, ...ranges.flatMap(points => points.map(point => point.max)))
     const step = Math.max(25, Math.ceil(highestValue / 100) * 25)
