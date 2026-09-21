@@ -13,16 +13,15 @@ const studyDuration = (seconds: number) => formatMinutes(Math.round(seconds / 60
 const shortDate = (date: Date) => new Intl.DateTimeFormat('ko', { month: 'numeric', day: 'numeric' }).format(date)
 
 export function StatsPage() {
-  const [today, setToday] = useState(() => new Date())
+  const [todayKey, setTodayKey] = useState(() => new Date().toLocaleDateString('en-CA'))
   const [source, setSource] = useState<StatsSourceData>(empty)
   const [timetable, setTimetable] = useState<Awaited<ReturnType<typeof getLatestTimetable>>>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const todayKey = today.toLocaleDateString('en-CA')
-  const days = useMemo(() => currentWeekDates(today), [todayKey])
+  const days = useMemo(() => currentWeekDates(new Date(`${todayKey}T12:00:00`)), [todayKey])
 
   useEffect(() => {
-    const timer = window.setInterval(() => setToday(new Date()), 60_000)
+    const timer = window.setInterval(() => setTodayKey(new Date().toLocaleDateString('en-CA')), 60_000)
     return () => window.clearInterval(timer)
   }, [])
 

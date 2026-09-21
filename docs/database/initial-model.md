@@ -14,6 +14,7 @@ Future policies must explicitly protect `SELECT`, `INSERT`, `UPDATE`, and `DELET
 | Table | Purpose | Important relationships |
 | --- | --- | --- |
 | `study_sessions` | Implemented: completed timed or manual intervals | No subject foreign key by design; owner-only RLS |
+| `study_timer_state` | Implemented: the owner's single active timer start timestamp | Shared across origins and atomically converted into a completed session on Pause |
 | `subjects` | Implemented: user-managed academic subjects by year and term | Archived; optionally referenced by Workstreams and Study events |
 | `projects` | Implemented: long-running top-level outcomes | Owns Workstreams and direct or nested Tasks; required due date |
 | `workstreams` | Implemented: optional Project subdivisions | Required Project; optional Subject; owns nested Tasks |
@@ -29,7 +30,7 @@ Future policies must explicitly protect `SELECT`, `INSERT`, `UPDATE`, and `DELET
 | `dosage_catalog` / `dosage_pk_profiles` / `dosage_intakes` | Implemented: medication reference records, sourced PK ranges, and personal administrations | Reference rows are read-only; intake rows use owner-only RLS |
 | `user_settings` | Cross-feature preferences | One row per user |
 
-`study_sessions`, Projects/Workstreams/Tasks/Subjects, Routine, Habits, Calendar Events, Caffeine, Quotes, imported Timetables, and Dosage records are implemented. Migrations 0001–0011 establish the original feature tables and Project hierarchy. Migrations 0012–0016 add Calendar visibility, Task timeline deadlines, caffeine preset overrides, and Schedule Subcategories. Migration 0017 organizes Subjects by academic year and term, 0018 adds the Event compact/bar display style, 0019 adds Quote Categories and Quotes, 0020 adds transactional timetable import storage, and 0021 adds medication reference and administration data.
+`study_sessions`, shared timer state, Projects/Workstreams/Tasks/Subjects, Routine, Habits, Calendar Events, Caffeine, Quotes, imported Timetables, and Dosage records are implemented. Migrations 0001–0011 establish the original feature tables and Project hierarchy. Migrations 0012–0016 add Calendar visibility, Task timeline deadlines, caffeine preset overrides, and Schedule Subcategories. Migration 0017 organizes Subjects by academic year and term, 0018 adds the Event compact/bar display style, 0019 adds Quote Categories and Quotes, 0020 adds transactional timetable import storage, 0021–0022 add medication reference and administration data, 0023 adds Sections and daily Habit records, and 0024 adds cross-origin shared timer state.
 
 Migration 0011 preserves legacy rows defensively. It creates one `Legacy Tasks` Project per owner with existing flat Tasks, creates Subject-backed Workstreams for subject-linked legacy Tasks, and assigns every legacy Task to its parent. Existing due dates are retained. A legacy null due date inherits its generated Workstream deadline or Project deadline; if an owner has no dated Task, that generated parent deadline is explicitly documented as the migration date (`current_date`). No start date is fabricated. Production contained no Task rows when this strategy was selected, while existing Subjects remain untouched.
 
