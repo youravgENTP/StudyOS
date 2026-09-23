@@ -1,0 +1,17 @@
+prefix_rule(
+    pattern = ["rm"],
+    decision = "prompt",
+    justification = "Ask before deleting files in StudyOS",
+)
+
+prefix_rule(
+    pattern = ["unlink"],
+    decision = "prompt",
+    justification = "Ask before deleting files in StudyOS",
+)
+
+prefix_rule(
+    pattern = ["rmdir"],
+    decision = "prompt",
+    justification = "Ask before deleting directories in StudyOS",
+)
