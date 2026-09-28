@@ -3,15 +3,15 @@ import { ChevronDown, ChevronUp, ChevronsLeft, Plus, SlidersHorizontal, X } from
 import { useNavigate, useOutletContext } from 'react-router-dom'
 import type { AppShellContext } from '../../components/layout/AppShell'
 import { useMediaQuery } from '../../hooks/useMediaQuery'
-import { listProjects, listSections, listSubjects, listTasks, listWorkstreams, onTasksChanged } from '../tasks/api/tasks'
+import { listProjects, listSections, listSubjects, listTasks, listWorkstreams, onTasksChanged, reschedulePlanningEntity } from '../tasks/api/tasks'
 import { taskCategoryLabels, type Project, type Section, type Subject, type Task, type TaskCategory, type Workstream } from '../tasks/types'
 import { useWeekStartsOn } from '../settings/preferences'
-import { listEvents, onCalendarChanged } from './api/events'
+import { listEvents, onCalendarChanged, rescheduleEvent } from './api/events'
 import { listScheduleSubcategories } from './api/subcategories'
 import { CalendarComposer } from './components/CalendarComposer'
-import { CalendarMonth, type CalendarFilters } from './components/CalendarMonth'
+import { CalendarMonth, type CalendarFilters, type CalendarItem } from './components/CalendarMonth'
 import { MobileMultiWeek } from './components/MobileMultiWeek'
-import { addDays, formatCalendarRange, isoDate, startOfWeekOn } from './date'
+import { addDays, formatCalendarRange, isoDate, shiftDateRange, startOfWeekOn } from './date'
 import type { CalendarEvent, ScheduleSubcategory } from './types'
 import './calendar.css'
 import './calendar-ten-week.css'
@@ -50,8 +50,8 @@ export function CalendarPage({ preset = 'everything' }: { preset?: 'everything' 
   const rangeStartKey = isoDate(rangeStart)
   const rangeEndKey = isoDate(rangeEnd)
 
-  const load = useCallback(async () => {
-    setLoading(true)
+  const load = useCallback(async (showLoading = false) => {
+    if (showLoading) setLoading(true)
     try {
       const [nextProjects, nextWorkstreams, nextSections, nextTasks, nextEvents, nextSubjects, nextSubcategories] = await Promise.all([listProjects(), listWorkstreams(), listSections(), listTasks(), listEvents(rangeStartKey, rangeEndKey), listSubjects(), listScheduleSubcategories()])
       setProjects(nextProjects)
@@ -70,7 +70,7 @@ export function CalendarPage({ preset = 'everything' }: { preset?: 'everything' 
   }, [rangeEndKey, rangeStartKey])
 
   useEffect(() => {
-    void load()
+    void load(true)
     const offCalendar = onCalendarChanged(() => void load())
     const offTasks = onTasksChanged(() => void load())
     return () => { offCalendar(); offTasks() }
@@ -91,6 +91,23 @@ export function CalendarPage({ preset = 'everything' }: { preset?: 'everything' 
     setComposerDate(null)
     setEditing(null)
     void load()
+  }
+
+  async function moveItem(item: CalendarItem, nextStart: string) {
+    const next = shiftDateRange(item.start, item.end, nextStart)
+    setError('')
+    if (item.kind === 'event') setEvents(current => current.map(value => value.id === item.value.id ? { ...value, startDate: next.start, endDate: next.end } : value))
+    if (item.kind === 'task') setTasks(current => current.map(value => value.id === item.value.id ? { ...value, startDate: value.startDate ? next.start : null, dueDate: next.end } : value))
+    if (item.kind === 'workstream') setWorkstreams(current => current.map(value => value.id === item.value.id ? { ...value, startDate: value.startDate ? next.start : null, dueDate: next.end } : value))
+    try {
+      if (item.kind === 'event') await rescheduleEvent(item.value.id, next.start, next.end)
+      else await reschedulePlanningEntity(item.kind === 'task' ? 'tasks' : 'workstreams', item.value.id, item.value.startDate ? next.start : null, next.end)
+    } catch (caught) {
+      if (item.kind === 'event') setEvents(current => current.map(value => value.id === item.value.id ? item.value : value))
+      if (item.kind === 'task') setTasks(current => current.map(value => value.id === item.value.id ? item.value : value))
+      if (item.kind === 'workstream') setWorkstreams(current => current.map(value => value.id === item.value.id ? item.value : value))
+      setError(caught instanceof Error ? caught.message : '일정을 이동하지 못했습니다.')
+    }
   }
 
   const weekdayLabels = (weekStartsOn === 0
@@ -143,7 +160,7 @@ export function CalendarPage({ preset = 'everything' }: { preset?: 'everything' 
     <div className="weekday-header">{weekdayLabels.map(({ label, day }) => <span key={day} className={day === 0 ? 'sunday' : day === 6 ? 'saturday' : ''}>{label}</span>)}</div>
     {loading ? <div className="calendar-loading">달력을 불러오는 중…</div> : mobile
       ? <MobileMultiWeek start={rangeStart} dayCount={DAYS_VISIBLE} tasks={showCompleted ? tasks : tasks.filter(item => item.status !== 'done')} workstreams={workstreams} sections={sections} projects={projects} events={events} filters={{ categories, sources, hiddenSubcategories }} onCreate={createAt} onSelect={select} onSelectWorkstream={workstream => navigate(`/tasks/${workstream.projectId}`)} />
-      : <CalendarMonth start={rangeStart} dayCount={DAYS_VISIBLE} tasks={showCompleted ? tasks : tasks.filter(item => item.status !== 'done')} workstreams={workstreams} sections={sections} projects={projects} events={events} filters={{ categories, sources, hiddenSubcategories }} showSectionGroups={showSectionGroups} linkedHighlight={linkedHighlight} onCreate={createAt} onSelect={select} onSelectWorkstream={workstream => navigate(`/tasks/${workstream.projectId}`)} />}
+      : <CalendarMonth start={rangeStart} dayCount={DAYS_VISIBLE} tasks={showCompleted ? tasks : tasks.filter(item => item.status !== 'done')} workstreams={workstreams} sections={sections} projects={projects} events={events} filters={{ categories, sources, hiddenSubcategories }} showSectionGroups={showSectionGroups} linkedHighlight={linkedHighlight} onCreate={createAt} onSelect={select} onSelectWorkstream={workstream => navigate(`/tasks/${workstream.projectId}`)} onMove={(item, date) => void moveItem(item, date)} />}
     </section>
     {mobileFiltersOpen && <div className="mobile-calendar-filter-backdrop" onClick={() => setMobileFiltersOpen(false)}><aside className="mobile-calendar-filters" onClick={event => event.stopPropagation()}><header><div><h2>캘린더 필터</h2><span>10주 보기에 표시할 항목</span></div><button onClick={() => setMobileFiltersOpen(false)} aria-label="필터 닫기"><X /></button></header>{filterFields}</aside></div>}
     {composerDate && <CalendarComposer key={`${isoDate(composerDate)}-${editing?.kind ?? 'new'}-${editing?.value.id ?? ''}`} date={isoDate(composerDate)} projects={projects} workstreams={workstreams} subjects={subjects} subcategories={subcategories} editing={editing} onClose={close} />}

@@ -119,6 +119,12 @@ export async function setEntityDday(table: 'projects' | 'workstreams' | 'tasks',
 export async function setTaskCompleted(id: string, completed: boolean) { await setEntityStatus('tasks', id, completed ? 'done' : 'not_started') }
 export async function setTaskDday(id: string, isDday: boolean) { await setEntityDday('tasks', id, isDday) }
 
+export async function reschedulePlanningEntity(table: 'workstreams' | 'tasks', id: string, startDate: string | null, dueDate: string) {
+  const { error } = await dataApi.from(table).update({ start_date: startDate, due_date: dueDate }).eq('id', id)
+  if (error) throw failure(`reschedule ${table}`, error)
+  notifyTasksChanged()
+}
+
 export async function reorderEntities(table: 'projects' | 'workstreams' | 'sections' | 'tasks', items: Array<{ id: string; position: number }>, id: string, targetIndex: number) {
   const from = items.findIndex(item => item.id === id); if (from < 0 || targetIndex < 0 || targetIndex >= items.length || from === targetIndex) return
   const reordered = [...items]; const [moved] = reordered.splice(from, 1); reordered.splice(targetIndex, 0, moved)

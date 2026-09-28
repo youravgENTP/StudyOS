@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { collectDdayEntities, dateWarnings, isEntityVisibleOnDate, parseExpandedIds, projectProgress, sectionProgress, sortTasksByDate, timelinePlacement, validateProjectInput, validateSectionInput, validateTaskInput, validateWorkstreamInput, workstreamProgress } from './model.ts'
+import { buildTasksMarkdown, collectDdayEntities, dateWarnings, isEntityVisibleOnDate, parseExpandedIds, projectProgress, sectionProgress, sortTasksByDate, timelinePlacement, validateProjectInput, validateSectionInput, validateTaskInput, validateWorkstreamInput, workstreamProgress } from './model.ts'
 import type { Project, ProjectInput, Task, TaskInput, Workstream, WorkstreamInput } from './types.ts'
 
 const base = { title: 'Item', description: null, category: 'study' as const, startDate: null, dueDate: '2026-10-10', status: 'not_started' as const, isDday: false }
@@ -85,4 +85,14 @@ test('Calendar treats a Workstream date range as a multi-day span', () => {
   assert.equal(isEntityVisibleOnDate(span, '2026-09-09'), false)
   assert.equal(isEntityVisibleOnDate(span, '2026-09-11'), true)
   assert.equal(isEntityVisibleOnDate(span, '2026-09-13'), false)
+})
+
+test('Tasks export produces a prompt-friendly Markdown hierarchy', () => {
+  const task = { ...makeTask('t1', 'done', 'w1'), sectionId: 's1', title: 'Read chapter 4', description: 'Focus on examples' }
+  const markdown = buildTasksMarkdown([project], [{ ...workstream, subject: { id: 'sub1', name: 'Physics', color: '#fff', academicYear: 2026, academicTerm: '2', archivedAt: null } }], [{ id: 's1', workstreamId: 'w1', title: 'Midterm', description: null, category: 'other', startDate: null, dueDate: null, status: 'not_started', position: 0, archivedAt: null, createdAt: '2026-09-10' }], [task], '2026-09-28')
+  assert.match(markdown, /# StudyOS 공부 계획/)
+  assert.match(markdown, /### Item \(Physics\)/)
+  assert.match(markdown, /#### Midterm/)
+  assert.match(markdown, /- \[x\] Read chapter 4/)
+  assert.match(markdown, /메모: Focus on examples/)
 })

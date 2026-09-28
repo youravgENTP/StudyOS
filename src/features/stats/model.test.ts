@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import type { StudyOsTimetablePayload } from '../timetable/types.ts'
-import { availableMinutesForDate, buildDailyStats, currentWeekDates, DAILY_PERSONAL_TIME_MINUTES } from './model.ts'
+import { availableMinutesForDate, buildDailyStats, capacityUtilization, currentWeekDates, DAILY_PERSONAL_TIME_MINUTES, utilizationChange } from './model.ts'
 
 const timetable: StudyOsTimetablePayload = {
   format: 'studyos-timetable', version: 1, exportedAt: '2026-09-14T00:00:00Z',
@@ -35,4 +35,19 @@ test('daily comparison keeps recorded study time independent from capacity', () 
   assert.equal(stats[0].availableMinutes, 420)
   assert.equal(stats[0].studySeconds, 7200)
   assert.equal(stats[0].caffeineMg, 75)
+})
+
+test('capacity utilization supports daily, cumulative, and prior-period comparison', () => {
+  const current = [
+    { availableMinutes: 120, studySeconds: 3600 },
+    { availableMinutes: 180, studySeconds: 7200 },
+  ]
+  const previous = [
+    { availableMinutes: 120, studySeconds: 1800 },
+    { availableMinutes: 180, studySeconds: 5400 },
+  ]
+  assert.equal(capacityUtilization([current[0]]), 50)
+  assert.equal(capacityUtilization(current), 60)
+  assert.equal(utilizationChange(current, previous), 20)
+  assert.equal(capacityUtilization([]), 0)
 })

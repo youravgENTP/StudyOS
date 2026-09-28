@@ -1,4 +1,4 @@
-import type { DdayEntity, PlanningEntity, Project, ProjectInput, SectionInput, Task, TaskInput, TaskStatus, Workstream, WorkstreamInput } from './types'
+import type { DdayEntity, PlanningEntity, Project, ProjectInput, Section, SectionInput, Task, TaskInput, TaskStatus, Workstream, WorkstreamInput } from './types'
 
 const required = (value: string) => Boolean(value.trim())
 const dateOrderValid = (startDate: string | null, dueDate: string) => !startDate || startDate <= dueDate
@@ -104,4 +104,45 @@ export function parseExpandedIds(raw: string | null) {
   } catch {
     return new Set<string>()
   }
+}
+
+const byPosition = <T extends { position: number }>(first: T, second: T) => first.position - second.position
+const headingText = (value: string) => value.replace(/[\r\n]+/g, ' ').trim()
+const dateRange = (start: string | null, end: string | null) => start ? `${start} → ${end ?? '미정'}` : end ? `마감 ${end}` : '날짜 미정'
+const exportStatusLabels: Record<TaskStatus, string> = { not_started: 'Not started', in_progress: 'In progress', done: 'Done', dropped: 'Dropped' }
+
+export function buildTasksMarkdown(projects: Project[], workstreams: Workstream[], sections: Section[], tasks: Task[], exportedOn: string) {
+  const lines = ['# StudyOS 공부 계획', '', `내보낸 날짜: ${exportedOn}`, '']
+  const addDescription = (description: string | null) => {
+    if (!description) return
+    lines.push(...description.trim().split(/\r?\n/).map(line => `> ${line}`), '')
+  }
+  const addTask = (task: Task) => {
+    const checked = task.status === 'done' ? 'x' : ' '
+    lines.push(`- [${checked}] ${headingText(task.title)} — ${dateRange(task.startDate, task.dueDate)} · ${exportStatusLabels[task.status]}${task.isDeadline ? ' · Deadline' : ''}`)
+    if (task.description) lines.push(...task.description.trim().split(/\r?\n/).map(line => `  - 메모: ${line}`))
+  }
+
+  for (const project of [...projects].sort(byPosition)) {
+    lines.push(`## ${headingText(project.title)}`, '', `- 상태: ${exportStatusLabels[project.status]}`, `- 기간: ${dateRange(project.startDate, project.dueDate)}`, '')
+    addDescription(project.description)
+    const projectWorkstreams = workstreams.filter(item => item.projectId === project.id).sort(byPosition)
+    for (const workstream of projectWorkstreams) {
+      lines.push(`### ${headingText(workstream.title)}${workstream.subject ? ` (${headingText(workstream.subject.name)})` : ''}`, '', `- 상태: ${exportStatusLabels[workstream.status]}`, `- 기간: ${dateRange(workstream.startDate, workstream.dueDate)}`, '')
+      addDescription(workstream.description)
+      const workstreamSections = sections.filter(item => item.workstreamId === workstream.id).sort(byPosition)
+      for (const section of workstreamSections) {
+        lines.push(`#### ${headingText(section.title)}`, '')
+        const sectionTasks = tasks.filter(item => item.sectionId === section.id).sort(byPosition)
+        if (sectionTasks.length) sectionTasks.forEach(addTask)
+        else lines.push('- 등록된 Task 없음')
+        lines.push('')
+      }
+      const ungrouped = tasks.filter(item => item.workstreamId === workstream.id && !item.sectionId).sort(byPosition)
+      if (ungrouped.length) { lines.push('#### Ungrouped', ''); ungrouped.forEach(addTask); lines.push('') }
+    }
+    const directTasks = tasks.filter(item => item.projectId === project.id && !item.workstreamId).sort(byPosition)
+    if (directTasks.length) { lines.push('### Project Tasks', ''); directTasks.forEach(addTask); lines.push('') }
+  }
+  return `${lines.join('\n').trim()}\n`
 }

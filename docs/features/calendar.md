@@ -14,3 +14,5 @@ Ordinary Events retain normal typography and their existing single-day or filled
 React highlight state links fragments semantically. Focusing or hovering a Task highlights its Section peers and parent Workstream; focusing a Section highlights its Tasks and Workstream; focusing a Workstream highlights all descendants and all visible week fragments. Section names fade in only when the group is active. Unrelated planning items are mildly dimmed. Mobile agenda rows expose Section or Ungrouped context in text because hover is unavailable.
 
 The ten-week range, week boundaries, lane calculations, event composer, source data, and desktop/mobile rendering are shared by both entry points. Calendar never copies planning records.
+
+Desktop calendar entries can be dragged onto another date. The UI updates optimistically and restores the original dates if persistence fails. Moving an Event changes only `start_date` and `end_date`, so a timed Event retains its original start and end times. Multi-day Events, Workstreams, and Tasks keep their duration; deadline-only planning items remain deadline-only.

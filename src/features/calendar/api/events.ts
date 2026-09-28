@@ -171,6 +171,12 @@ export async function updateEvent(
   notifyCalendarChanged()
 }
 
+export async function rescheduleEvent(id: string, startDate: string, endDate: string) {
+  const { error } = await dataApi.from('events').update({ start_date: startDate, end_date: endDate }).eq('id', id)
+  if (error) throw failure(error)
+  notifyCalendarChanged()
+}
+
 export async function deleteEvent(id: string) {
   const { error } = await dataApi
     .from('events')

@@ -13,4 +13,6 @@ The desktop Project screen uses a Navigator containing Workstreams and Sections 
 
 Tasks exposes List and Calendar views. Calendar routes to the shared Calendar implementation with the Tasks-only preset; there is no Tasks-owned calendar renderer. The former percent-positioned `PortfolioTimeline` implementation was removed.
 
+The Tasks toolbar exports the currently selected portfolio scope (Active or All) as a UTF-8 Markdown file. The export preserves Project → Workstream → Section → Task hierarchy, Subject names, statuses, date ranges, completion checkboxes, deadlines, and descriptions so it can be pasted or uploaded as planning context for GPT.
+
 Sections have optional descriptions, optional date ranges, explicit sibling positions, status, and archival. Archiving a Section preserves its Tasks because the UI first treats their now-hidden relationship as Ungrouped; destructive deletion is not used by the client. Parent date containment remains advisory and produces warnings.

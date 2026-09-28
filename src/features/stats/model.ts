@@ -50,6 +50,16 @@ export type DailyStat = {
   caffeineCount: number
 }
 
+export function capacityUtilization(days: Pick<DailyStat, 'availableMinutes' | 'studySeconds'>[]) {
+  const availableMinutes = days.reduce((sum, day) => sum + day.availableMinutes, 0)
+  const studyMinutes = days.reduce((sum, day) => sum + day.studySeconds, 0) / 60
+  return availableMinutes ? studyMinutes / availableMinutes * 100 : 0
+}
+
+export function utilizationChange(current: Pick<DailyStat, 'availableMinutes' | 'studySeconds'>[], previous: Pick<DailyStat, 'availableMinutes' | 'studySeconds'>[]) {
+  return capacityUtilization(current) - capacityUtilization(previous)
+}
+
 export function buildDailyStats(days: Date[], timetable: StudyOsTimetablePayload | null, source: StatsSourceData): DailyStat[] {
   return days.map(date => {
     const key = localDateKey(date)

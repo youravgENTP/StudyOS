@@ -1,0 +1,82 @@
+.stats-week-navigation {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.stats-week-navigation > button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--muted);
+  background: var(--surface-muted);
+}
+
+.stats-week-navigation > button:hover:not(:disabled) { color: var(--text); }
+.stats-week-navigation > button:disabled { opacity: .35; }
+.stats-week-navigation svg { width: 16px; }
+
+.stats-week-navigation > div {
+  display: grid;
+  min-width: 112px;
+  padding: 0 8px;
+  text-align: center;
+}
+
+.stats-week-navigation strong { font-size: 12px; font-variant-numeric: tabular-nums; }
+.stats-week-navigation span { color: var(--muted); font-size: 9px; }
+
+.stats-week-navigation .stats-this-week {
+  display: block;
+  width: auto;
+  padding: 0 10px;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.capacity-metrics { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.stats-delta.positive strong { color: #59c989; }
+.stats-delta.negative strong { color: #ff6961; }
+.capacity-day.future { opacity: .42; }
+
+.daily-utilization-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.daily-utilization-grid article {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px;
+  border-radius: 9px;
+  background: var(--surface-muted);
+}
+
+.daily-utilization-grid article.future { opacity: .42; }
+.daily-utilization-grid span,
+.daily-utilization-grid small { overflow: hidden; color: var(--muted); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.daily-utilization-grid strong { font-size: 15px; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 900px) {
+  .capacity-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 760px) {
+  .stats-week-navigation { align-self: flex-start; }
+  .capacity-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .daily-utilization-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .daily-utilization-grid article:last-child { grid-column: 1 / -1; }
+}

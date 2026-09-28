@@ -31,6 +31,24 @@ export function addDays(
   return next
 }
 
+function isoDateParts(value: string) {
+  const [year, month, day] = value.split('-').map(Number)
+  return { year, month, day }
+}
+
+export function addIsoDays(value: string, amount: number) {
+  const { year, month, day } = isoDateParts(value)
+  const next = new Date(Date.UTC(year, month - 1, day + amount))
+  return next.toISOString().slice(0, 10)
+}
+
+export function shiftDateRange(start: string, end: string, nextStart: string) {
+  const from = isoDateParts(start)
+  const to = isoDateParts(end)
+  const duration = Math.round((Date.UTC(to.year, to.month - 1, to.day) - Date.UTC(from.year, from.month - 1, from.day)) / 86_400_000)
+  return { start: nextStart, end: addIsoDays(nextStart, duration) }
+}
+
 export function sameDate(
   first: Date,
   second: Date,

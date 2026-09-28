@@ -1,11 +1,11 @@
-import { useState, type CSSProperties } from 'react'
+import { useState, type CSSProperties, type DragEvent } from 'react'
 import type { Project, Section, Task, TaskCategory, Workstream } from '../../tasks/types'
 import type { CalendarEvent } from '../types'
 import { addDays, isoDate, sameDate } from '../date'
 
 type Selection = { kind: 'task'; value: Task } | { kind: 'event'; value: CalendarEvent }
 type SourceKind = 'event' | 'workstream' | 'task'
-type CalendarItem =
+export type CalendarItem =
   | { kind: 'event'; value: CalendarEvent; start: string; end: string }
   | { kind: 'workstream'; value: Workstream; start: string; end: string }
   | { kind: 'task'; value: Task; start: string; end: string }
@@ -30,8 +30,8 @@ function colorForSection(section: Section, workstreams: Workstream[]) {
   return parent?.subject?.color ?? categoryColor[parent?.category ?? 'other']
 }
 
-function Week({ start, items, projects, workstreams, sections, showSectionGroups, linkedHighlight, highlight, onHighlight, onCreate, onSelect, onSelectWorkstream }: {
-  start: Date; items: CalendarItem[]; projects: Project[]; workstreams: Workstream[]; sections: Section[]; showSectionGroups: boolean; linkedHighlight: boolean; highlight: CalendarHighlight; onHighlight: (value: CalendarHighlight) => void; onCreate: (date: Date) => void; onSelect: (selection: Selection) => void; onSelectWorkstream: (workstream: Workstream) => void
+function Week({ start, items, projects, workstreams, sections, showSectionGroups, linkedHighlight, highlight, onHighlight, dragged, dropTarget, onDragStart, onDragEnd, onDragOverDate, onDropDate, onCreate, onSelect, onSelectWorkstream }: {
+  start: Date; items: CalendarItem[]; projects: Project[]; workstreams: Workstream[]; sections: Section[]; showSectionGroups: boolean; linkedHighlight: boolean; highlight: CalendarHighlight; onHighlight: (value: CalendarHighlight) => void; dragged: CalendarItem | null; dropTarget: string | null; onDragStart: (item: CalendarItem) => void; onDragEnd: () => void; onDragOverDate: (date: string) => void; onDropDate: (date: string) => void; onCreate: (date: Date) => void; onSelect: (selection: Selection) => void; onSelectWorkstream: (workstream: Workstream) => void
 }) {
   const today = new Date()
   const days = Array.from({ length: 7 }, (_, index) => addDays(start, index))
@@ -108,13 +108,20 @@ function Week({ start, items, projects, workstreams, sections, showSectionGroups
     const color = colorFor(item, projects, workstreams)
     const timed = item.kind === 'event' && !item.value.allDay ? item.value.startTime?.slice(0, 5) : ''
     const major = item.kind === 'event' ? item.value.isMajor : item.value.isDday
-    return <button className={`month-entry ${item.kind}${major ? ' major' : ''}${spanningBar ? ' calendar-span' : ''}${related(item) ? ' related-highlight' : ''}${planningDimmed(item) ? ' planning-dimmed' : ''}${item.kind==='task'&&item.value.status==='done'?' completed':''}`} style={{ '--entry-color': color } as CSSProperties} onMouseEnter={()=>onHighlight(highlightFor(item))} onMouseLeave={()=>onHighlight(null)} onFocus={()=>onHighlight(highlightFor(item))} onBlur={()=>onHighlight(null)} onClick={event => { event.stopPropagation(); activate(item) }}><i />{timed && <small>{timed}</small>}<span>{item.value.title}</span></button>
+    const dragging = dragged?.kind === item.kind && dragged.value.id === item.value.id
+    return <button draggable className={`month-entry ${item.kind}${major ? ' major' : ''}${spanningBar ? ' calendar-span' : ''}${related(item) ? ' related-highlight' : ''}${planningDimmed(item) ? ' planning-dimmed' : ''}${item.kind==='task'&&item.value.status==='done'?' completed':''}${dragging?' dragging':''}`} style={{ '--entry-color': color } as CSSProperties} title="다른 날짜로 드래그하여 이동" onDragStart={event => { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', `${item.kind}:${item.value.id}`); onDragStart(item) }} onDragEnd={onDragEnd} onMouseEnter={()=>onHighlight(highlightFor(item))} onMouseLeave={()=>onHighlight(null)} onFocus={()=>onHighlight(highlightFor(item))} onBlur={()=>onHighlight(null)} onClick={event => { event.stopPropagation(); activate(item) }}><i />{timed && <small>{timed}</small>}<span>{item.value.title}</span></button>
   }
 
-  return <div className="calendar-week" style={{ minHeight: height }}>
+  function dateAtPointer(event: DragEvent<HTMLDivElement>) {
+    const bounds = event.currentTarget.getBoundingClientRect()
+    const column = Math.max(0, Math.min(6, Math.floor((event.clientX - bounds.left) / bounds.width * 7)))
+    return isoDate(days[column])
+  }
+
+  return <div className="calendar-week" style={{ minHeight: height }} onDragOver={event => { if (!dragged) return; event.preventDefault(); event.dataTransfer.dropEffect = 'move'; onDragOverDate(dateAtPointer(event)) }} onDrop={event => { if (!dragged) return; event.preventDefault(); onDropDate(dateAtPointer(event)) }}>
     <div className="calendar-week-days">{days.map((date, index) => {
       const key = isoDate(date)
-      return <div key={key} className={`month-day${sameDate(date, today) ? ' today' : ''}`} onClick={() => onCreate(date)} role="button" tabIndex={0} onKeyDown={event => { if (event.key === 'Enter') onCreate(date) }}>
+      return <div key={key} className={`month-day${sameDate(date, today) ? ' today' : ''}${dropTarget === key ? ' drop-target' : ''}`} onClick={() => onCreate(date)} role="button" tabIndex={0} onKeyDown={event => { if (event.key === 'Enter') onCreate(date) }}>
         <div className="month-date"><span>{date.getDate() === 1 ? `${date.getMonth() + 1}월 ${date.getDate()}일` : date.getDate()}</span></div>
         <div className="month-items" style={{ paddingTop: laneEnds.length * 23 }}>{singlesByDay[index].map(item => <span className="calendar-single" key={`${item.kind}-${item.value.id}`}>{entry(item)}</span>)}</div>
       </div>
@@ -124,14 +131,18 @@ function Week({ start, items, projects, workstreams, sections, showSectionGroups
   </div>
 }
 
-export function CalendarMonth({ start, dayCount, tasks, workstreams, sections, projects, events, filters, showSectionGroups = true, linkedHighlight = true, onCreate, onSelect, onSelectWorkstream }: {
-  start: Date; dayCount: number; tasks: Task[]; workstreams: Workstream[]; sections: Section[]; projects: Project[]; events: CalendarEvent[]; filters: CalendarFilters; showSectionGroups?: boolean; linkedHighlight?: boolean; onCreate: (date: Date) => void; onSelect: (selection: Selection) => void; onSelectWorkstream: (workstream: Workstream) => void
+export function CalendarMonth({ start, dayCount, tasks, workstreams, sections, projects, events, filters, showSectionGroups = true, linkedHighlight = true, onCreate, onSelect, onSelectWorkstream, onMove }: {
+  start: Date; dayCount: number; tasks: Task[]; workstreams: Workstream[]; sections: Section[]; projects: Project[]; events: CalendarEvent[]; filters: CalendarFilters; showSectionGroups?: boolean; linkedHighlight?: boolean; onCreate: (date: Date) => void; onSelect: (selection: Selection) => void; onSelectWorkstream: (workstream: Workstream) => void; onMove: (item: CalendarItem, date: string) => void
 }) {
   const [highlight, setHighlight] = useState<CalendarHighlight>(null)
+  const [dragged, setDragged] = useState<CalendarItem | null>(null)
+  const [dropTarget, setDropTarget] = useState<string | null>(null)
   const items: CalendarItem[] = [
     ...events.filter(item => filters.sources.has('event') && filters.categories.has(item.category) && !filters.hiddenSubcategories.has(item.subcategoryId ?? `uncategorized:${item.category}`)).map(value => ({ kind: 'event' as const, value, start: value.startDate, end: value.endDate })),
     ...workstreams.filter(item => item.showOnCalendar && filters.sources.has('workstream') && filters.categories.has(item.category)).map(value => ({ kind: 'workstream' as const, value, start: value.startDate ?? value.dueDate, end: value.dueDate })),
     ...tasks.filter(item => item.showOnCalendar && filters.sources.has('task') && filters.categories.has(item.category)).map(value => ({ kind: 'task' as const, value, start: value.startDate ?? value.dueDate, end: value.dueDate })),
   ]
-  return <div className="month-grid">{Array.from({ length: Math.ceil(dayCount / 7) }, (_, week) => <Week key={isoDate(addDays(start, week * 7))} start={addDays(start, week * 7)} items={items} projects={projects} workstreams={workstreams} sections={sections} showSectionGroups={showSectionGroups} linkedHighlight={linkedHighlight} highlight={highlight} onHighlight={setHighlight} onCreate={onCreate} onSelect={onSelect} onSelectWorkstream={onSelectWorkstream} />)}</div>
+  function finishDrag() { setDragged(null); setDropTarget(null) }
+  function dropAt(date: string) { if (dragged && date !== dragged.start) onMove(dragged, date); finishDrag() }
+  return <div className="month-grid">{Array.from({ length: Math.ceil(dayCount / 7) }, (_, week) => <Week key={isoDate(addDays(start, week * 7))} start={addDays(start, week * 7)} items={items} projects={projects} workstreams={workstreams} sections={sections} showSectionGroups={showSectionGroups} linkedHighlight={linkedHighlight} highlight={highlight} onHighlight={setHighlight} dragged={dragged} dropTarget={dropTarget} onDragStart={setDragged} onDragEnd={finishDrag} onDragOverDate={setDropTarget} onDropDate={dropAt} onCreate={onCreate} onSelect={onSelect} onSelectWorkstream={onSelectWorkstream} />)}</div>
 }
