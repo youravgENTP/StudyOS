@@ -37,9 +37,15 @@ export function StatsPage() {
     let cancelled = false
     const from = new Date(previousDays[0]); from.setHours(0, 0, 0, 0)
     const to = new Date(days.at(-1)!); to.setDate(to.getDate() + 1); to.setHours(0, 0, 0, 0)
-    void Promise.all([loadStatsSource(from, to), getLatestTimetable()]).then(([nextSource, nextTimetable]) => {
-      if (!cancelled) { setSource(nextSource); setTimetable(nextTimetable); setError('') }
-    }).catch(caught => { if (!cancelled) setError(caught instanceof Error ? caught.message : '통계를 불러오지 못했습니다.') }).finally(() => { if (!cancelled) setLoading(false) })
+    void Promise.allSettled([loadStatsSource(from, to), getLatestTimetable()]).then(([sourceResult, timetableResult]) => {
+      if (cancelled) return
+      const errors: string[] = []
+      if (sourceResult.status === 'fulfilled') setSource(sourceResult.value)
+      else { setSource(empty); errors.push(sourceResult.reason instanceof Error ? sourceResult.reason.message : '통계 데이터를 불러오지 못했습니다.') }
+      if (timetableResult.status === 'fulfilled') setTimetable(timetableResult.value)
+      else { setTimetable(null); errors.push(timetableResult.reason instanceof Error ? timetableResult.reason.message : '시간표를 불러오지 못했습니다.') }
+      setError(errors.join(' '))
+    }).finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [days, previousDays])
 
