@@ -1,12 +1,31 @@
 import { dataApi } from '../../../lib/neon/data'
+import { localMidnightBoundaries } from '../model'
 type StudySessionSource = 'timer' | 'manual'
 const ACTIVE_TIMER_END = '9999-12-31T23:59:59.999Z'
 function localDayRange(date = new Date()){const start=new Date(date);start.setHours(0,0,0,0);const end=new Date(start);end.setDate(end.getDate()+1);return{start:start.toISOString(),end:end.toISOString()}}
 
 export type StudyTimerSnapshot = { accumulatedSeconds: number; startedAt: number | null }
 
+async function rolloverStudyTimer(now = new Date()): Promise<number | null> {
+  const active = await dataApi.from('study_sessions').select('started_at').eq('ended_at', ACTIVE_TIMER_END).maybeSingle()
+  if (active.error) throw active.error
+  if (!active.data?.started_at) return null
+
+  let startedAt = new Date(String(active.data.started_at))
+  const boundaries = localMidnightBoundaries(startedAt, now)
+  for (let offset = 0; offset < boundaries.length; offset += 32) {
+    const batch = boundaries.slice(offset, offset + 32).map(boundary => boundary.toISOString())
+    const result = await dataApi.rpc('rollover_study_timer', { requested_boundaries: batch })
+    if (result.error) throw result.error
+    if (result.data) startedAt = new Date(String(result.data))
+  }
+  return startedAt.getTime()
+}
+
 export async function getStudyTimerSnapshot(): Promise<StudyTimerSnapshot> {
-  const { start, end } = localDayRange()
+  const now = new Date()
+  await rolloverStudyTimer(now)
+  const { start, end } = localDayRange(now)
   const [sessionsResult, timerResult] = await Promise.all([
     dataApi.from('study_sessions').select('duration_seconds').gte('ended_at', start).lt('ended_at', end),
     dataApi.from('study_sessions').select('started_at').eq('ended_at', ACTIVE_TIMER_END).maybeSingle(),
@@ -20,6 +39,7 @@ export async function getStudyTimerSnapshot(): Promise<StudyTimerSnapshot> {
 }
 
 export async function startStudyTimer(startedAt = new Date()): Promise<number> {
+  await rolloverStudyTimer(startedAt)
   const existing = await dataApi.from('study_sessions').select('started_at').eq('ended_at', ACTIVE_TIMER_END).maybeSingle()
   if (existing.error) throw existing.error
   if (existing.data?.started_at) return new Date(String(existing.data.started_at)).getTime()
@@ -36,10 +56,11 @@ export async function startStudyTimer(startedAt = new Date()): Promise<number> {
 }
 
 export async function pauseStudyTimer(): Promise<number> {
+  const endedAt = new Date()
+  await rolloverStudyTimer(endedAt)
   const active = await dataApi.from('study_sessions').select('id,started_at').eq('ended_at', ACTIVE_TIMER_END).maybeSingle()
   if (active.error) throw active.error
   if (!active.data?.started_at) return 0
-  const endedAt = new Date()
   const durationSeconds = Math.max(1, Math.floor((endedAt.getTime() - new Date(String(active.data.started_at)).getTime()) / 1000))
   const updated = await dataApi.from('study_sessions').update({
     duration_seconds: durationSeconds, ended_at: endedAt.toISOString(),
