@@ -24,3 +24,8 @@ test('rejects unknown categories and invalid schedule ranges', () => {
   assert.throws(() => parseStudyOsPlan({ ...payload, tasks: { projects: [{ ...payload.tasks.projects[0], category: 'invented' }] } }), /지원하지 않는 카테고리/)
   assert.throws(() => parseStudyOsPlan({ ...payload, schedules: { events: [{ ...payload.schedules.events[0], endTime: '09:00' }] } }), /종료 시점/)
 })
+
+test('rejects malformed entity IDs and display styles before import', () => {
+  assert.throws(() => parseStudyOsPlan({ ...payload, tasks: { projects: [{ ...payload.tasks.projects[0], id: 'not-a-uuid' }] } }), /UUID/)
+  assert.throws(() => parseStudyOsPlan({ ...payload, schedules: { events: [{ ...payload.schedules.events[0], displayStyle: 'giant' }] } }), /표시 방식/)
+})

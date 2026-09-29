@@ -60,3 +60,5 @@ export type StudyOsPlan = {
 }
 
 export type TransferCounts = { subjects: number; subcategories: number; projects: number; workstreams: number; sections: number; tasks: number; events: number }
+export type ImportMode = 'merge' | 'update'
+export type ImportResult = { inserted: TransferCounts; updated: TransferCounts; unchanged: TransferCounts }
