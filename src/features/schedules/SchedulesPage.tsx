@@ -6,6 +6,7 @@ import { deleteEvent, listAllEvents, moveEventsToSubcategory, onCalendarChanged 
 import { archiveScheduleSubcategory, createScheduleSubcategory, listScheduleSubcategories, updateScheduleSubcategory } from '../calendar/api/subcategories'
 import { CalendarComposer } from '../calendar/components/CalendarComposer'
 import type { CalendarEvent, ScheduleSubcategory } from '../calendar/types'
+import { PlanTransferControls } from '../plan-transfer/PlanTransferControls'
 import './schedules.css'
 
 type GroupBy = 'category' | 'subcategory' | 'subject' | 'month' | 'importance' | 'none'
@@ -101,7 +102,7 @@ export function SchedulesPage() {
   const rangeLabel = !from && !to ? 'All dates' : from && to ? `${from} – ${to}` : from ? `From ${from}` : `Until ${to}`
 
   return <div className="page schedules-page">
-    <header className="schedules-heading"><div><div className="eyebrow">Browse and manage</div><h1 className="page-title">Schedules</h1></div><div><button className="button" onClick={() => setManageOpen(true)}><SlidersHorizontal /> Subcategories</button><button className="button primary" onClick={() => setEditing(null)}><Plus /> Schedule</button></div></header>
+    <header className="schedules-heading"><div><div className="eyebrow">Browse and manage</div><h1 className="page-title">Schedules</h1></div><div><PlanTransferControls/><button className="button" onClick={() => setManageOpen(true)}><SlidersHorizontal /> Subcategories</button><button className="button primary" onClick={() => setEditing(null)}><Plus /> Schedule</button></div></header>
     <section className="card schedule-toolbar">
       <input type="search" placeholder="Search schedules" value={query} onChange={event => setQuery(event.target.value)} />
       <label>Category<select value={category} onChange={event => { setCategory(event.target.value as TaskCategory | 'all'); setSubcategoryFilter(new Set()) }}><option value="all">All</option>{Object.entries(taskCategoryLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
