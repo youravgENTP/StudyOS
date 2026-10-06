@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import type { WeekStart } from '../calendar/date'
 import { TimetableImportCard } from '../timetable/TimetableImportCard'
+import { MedicationCatalogCard } from './MedicationCatalogCard'
 import { requestPasswordReset, updateProfile } from '../../lib/neon/auth'
 import { useAuth } from '../../providers/auth-context'
 import { setBedtime, setBedtimeResidualTargetMg, setCaffeineAxisFontSize, setCaffeineHalfLifeHours, setWeekStartsOn, useBedtime, useBedtimeResidualTargetMg, useCaffeineAxisFontSize, useCaffeineHalfLifeHours, useWeekStartsOn } from './preferences'
@@ -75,6 +76,7 @@ export function SettingsPage() {
       {resetMessage && <p className={`settings-message ${resetMessage.tone}`} role="status">{resetMessage.text}</p>}
     </section>
     <TimetableImportCard />
+    <MedicationCatalogCard />
     <section className="card settings-section">
       <div><h2>Calendar</h2><p>Choose which day appears first in every Calendar week.</p></div>
       <label className="value-setting">

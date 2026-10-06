@@ -9,7 +9,7 @@
     {"id":"calendar","type":"feature","title":"Calendar","summary":"Full-screen ten-week planning for Events, Workstream spans, and Task spans or deadlines.","doc":"features/calendar.md","position":{"x":290,"y":850}},
     {"id":"caffeine","type":"feature","title":"Caffeine intake","summary":"Intake records projected as a scrollable time-varying estimated body load.","doc":"features/caffeine.md","position":{"x":290,"y":1020}},
     {"id":"quotes","type":"feature","title":"Quotes","summary":"Categorized quotation CRUD with a daily Dashboard projection.","doc":"features/quotes.md","position":{"x":290,"y":1120}},
-    {"id":"settings","type":"feature","title":"Settings","summary":"Device-local preferences and the timetable import entry point.","doc":"features/settings.md","position":{"x":290,"y":1190}},
+    {"id":"settings","type":"feature","title":"Settings","summary":"Device-local preferences plus timetable and medication-catalog import entry points.","doc":"features/settings.md","position":{"x":290,"y":1190}},
     {"id":"timetable-import","type":"feature","title":"Timetable Import","summary":"Validates inyak-planner JSON and imports Subjects plus weekly class blocks transactionally.","doc":"features/timetable-import.md","position":{"x":290,"y":1320}},
     {"id":"stats","type":"feature","title":"Stats","summary":"Publishes timetable-aware study capacity and bounded Caffeine history.","doc":"features/stats.md","position":{"x":290,"y":1450}},
     {"id":"dosage","type":"feature","title":"Dosage","summary":"Tracks Caffeine plus evidence-backed medication reference and administration records.","doc":"features/dosage.md","position":{"x":290,"y":1580}},
@@ -28,7 +28,7 @@
     {"id":"caffeine-tables","type":"database","title":"caffeine intakes & presets","summary":"Dose history plus reusable owner-defined drink and tablet presets.","doc":"database/initial-model.md","position":{"x":1160,"y":1100}},
     {"id":"quote-tables","type":"database","title":"quote categories & quotes","summary":"Owner-managed categorized quotations and Dashboard eligibility.","doc":"database/initial-model.md","position":{"x":1160,"y":1220}},
     {"id":"timetable-tables","type":"database","title":"timetables, courses & meetings","summary":"Imported semester identity, Subject-linked courses, and normalized weekly meeting blocks.","doc":"database/initial-model.md","position":{"x":1160,"y":1360}},
-    {"id":"dosage-tables","type":"database","title":"dosage catalog, PK & intakes","summary":"Read-only medication references and owner-only administration snapshots.","doc":"database/initial-model.md","position":{"x":1160,"y":1500}},
+    {"id":"dosage-tables","type":"database","title":"dosage catalog, PK & intakes","summary":"Owner-managed medication references, sourced PK profiles, and administration snapshots.","doc":"database/initial-model.md","position":{"x":1160,"y":1500}},
     {"id":"vercel-deployment","type":"service","title":"Vercel Deployment","summary":"Hosts the StudyOS PWA over HTTPS for Mac and iPhone access.","doc":"services/vercel-deployment.md","position":{"x":0,"y":-100}}
   ],
   "edges": [
@@ -45,6 +45,7 @@
     {"id":"shell-settings","from":"application-shell","to":"settings","label":"renders","summary":"The shell exposes the Settings route on desktop and mobile."},
     {"id":"settings-caffeine","from":"settings","to":"caffeine","label":"configures","summary":"Device-local bedtime, bedtime residual target, half-life, and axis-label preferences drive Caffeine calculations and display."},
     {"id":"settings-timetable-import","from":"settings","to":"timetable-import","label":"hosts","summary":"Settings provides the file picker, validated preview, and current timetable summary."},
+    {"id":"settings-dosage-import","from":"settings","to":"dosage","label":"manages","summary":"Settings validates, previews, exports, and transactionally imports the owner medication catalog."},
     {"id":"timetable-data-api","from":"timetable-import","to":"neon-data-api","label":"transactional RPC","summary":"A validated payload is imported through one authenticated database function."},
     {"id":"data-api-timetables","from":"neon-data-api","to":"timetable-tables","label":"owner-only RLS","summary":"Imported timetable, course, and meeting records are available only to their owner."},
     {"id":"timetable-subjects","from":"timetable-tables","to":"subjects-table","label":"reuses","summary":"Each imported course references an existing or newly created StudyOS Subject."},

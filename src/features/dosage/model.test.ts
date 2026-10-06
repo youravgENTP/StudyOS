@@ -7,11 +7,11 @@ const profile: DosagePkProfile = {
   analyte: 'Example', tmaxMinMinutes: 60, tmaxMaxMinutes: 60,
   halfLifeMinMinutes: 120, halfLifeMaxMinutes: 120,
   bioavailabilityMinPercent: null, bioavailabilityMaxPercent: null,
-  absorptionNotes: '', modelStatus: 'reference_only', sourceTitle: '', sourceUrl: '',
+  absorptionNotes: '', modelStatus: 'reference_only', sourceTitle: '', sourceUrl: '', sourceRetrievedAt: '2026-09-14',
 }
 const catalog: DosageCatalogItem = {
   key: 'example', displayName: 'Example 500 mg', aliases: [], ingredientName: 'Example', category: 'medication',
-  strengthValue: 500, strengthUnit: 'mg', defaultDoseQuantity: 1, doseForm: 'Tablet', route: 'Oral', manufacturer: null, pkProfiles: [profile],
+  strengthValue: 500, strengthUnit: 'mg', defaultDoseQuantity: 1, doseForm: 'Tablet', route: 'Oral', manufacturer: null, archivedAt: null, pkProfiles: [profile],
 }
 const intake: DosageIntake = {
   id: 'dose-1', catalogKey: 'example', productName: 'Example 500 mg', ingredientName: 'Example',
