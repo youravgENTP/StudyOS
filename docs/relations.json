@@ -40,7 +40,7 @@
     {"id":"dashboard-routine","from":"dashboard","to":"routine","label":"projects","summary":"The Dashboard shows completion progress from today's routine instance."},
     {"id":"dashboard-habits","from":"dashboard","to":"habits","label":"projects","summary":"The Dashboard shows today's scheduled habit completion count."},
     {"id":"dashboard-caffeine","from":"dashboard","to":"caffeine","label":"projects","summary":"The Dashboard shows current and bedtime estimates plus existing-load-aware latest-dose guidance."},
-    {"id":"dashboard-quotes","from":"dashboard","to":"quotes","label":"projects","summary":"The Dashboard selects a stable daily quote from enabled categories."},
+    {"id":"dashboard-quotes","from":"dashboard","to":"quotes","label":"projects","summary":"The Dashboard randomly selects a quote from enabled categories without an immediate repeat."},
     {"id":"shell-quotes","from":"application-shell","to":"quotes","label":"renders","summary":"The shell exposes the Quotes management route."},
     {"id":"shell-settings","from":"application-shell","to":"settings","label":"renders","summary":"The shell exposes the Settings route on desktop and mobile."},
     {"id":"settings-caffeine","from":"settings","to":"caffeine","label":"configures","summary":"Device-local bedtime, bedtime residual target, half-life, and axis-label preferences drive Caffeine calculations and display."},
