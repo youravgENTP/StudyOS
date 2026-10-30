@@ -11,7 +11,7 @@ export async function loadStudyOsPlan() {
 }
 
 export async function importStudyOsPlan(payload: StudyOsPlan, importMode: ImportMode): Promise<ImportResult> {
-  const { data, error } = await dataApi.rpc('import_studyos_plan_v2', { payload, import_mode: importMode })
+  const { data, error } = await dataApi.rpc('import_studyos_plan_v3', { payload, import_mode: importMode })
   if (error) throw new Error(error.message || '계획을 가져오지 못했습니다.')
   notifyTasksChanged()
   window.dispatchEvent(new Event('studyos:calendar-changed'))

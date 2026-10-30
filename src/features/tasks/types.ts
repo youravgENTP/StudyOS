@@ -22,7 +22,7 @@ export type PlanningEntity = {
   createdAt: string
 }
 
-export type Project = PlanningEntity
+export type Project = PlanningEntity & { archivedAt: string | null }
 export type Workstream = PlanningEntity & { projectId: string; subjectId: string | null; subject: Subject | null; showOnCalendar: boolean }
 export type Section = Omit<PlanningEntity, 'dueDate' | 'isDday' | 'completedAt'> & { workstreamId: string; dueDate: string | null; archivedAt: string | null }
 export type Task = PlanningEntity & { projectId: string; workstreamId: string | null; sectionId: string | null; showOnCalendar: boolean; isDeadline: boolean }

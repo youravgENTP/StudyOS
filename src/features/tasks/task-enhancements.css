@@ -1,0 +1,17 @@
+.archived-indicator { display:inline-block!important; margin-left:8px; padding:2px 6px; border:1px solid var(--border); border-radius:5px; color:var(--muted)!important; background:var(--surface-muted); font-size:10px!important; font-weight:500; vertical-align:middle }
+.page-title .archived-indicator { font-size:11px!important }
+.section-actions { display:flex; align-items:center; gap:2px }
+.section-actions button { display:grid; place-items:center; width:34px; height:34px; padding:0; border:0; border-radius:7px; color:var(--muted); background:none }
+.section-actions button:hover:not(:disabled) { color:var(--text); background:var(--surface-muted) }
+.section-actions button:disabled { opacity:.3; cursor:not-allowed }
+.section-actions svg { width:17px }
+.workspace-task.selected { background:color-mix(in srgb,var(--accent) 9%,transparent) }
+.confirmation-backdrop { position:fixed; z-index:180; inset:0; display:grid; place-items:center; padding:20px; background:rgb(0 0 0/.58); backdrop-filter:blur(3px) }
+.confirmation-dialog { position:static; width:min(440px,100%); margin:0; padding:24px; border:1px solid var(--border); border-radius:14px; color:var(--text); background:var(--surface); box-shadow:0 20px 60px #0009 }
+.confirmation-dialog h2 { margin:0 0 10px; font-size:19px }
+.confirmation-dialog p { margin:0; color:var(--muted); font-size:13px; line-height:1.55 }
+.confirmation-dialog > div { display:flex; justify-content:flex-end; gap:8px; margin-top:22px }
+.confirmation-dialog button { padding:8px 14px; border:1px solid var(--border); border-radius:7px; color:var(--text); background:var(--surface-muted) }
+.confirmation-dialog .primary { border-color:transparent; color:#fff; background:var(--accent) }
+.confirmation-dialog .destructive { border-color:color-mix(in srgb,var(--danger) 55%,var(--border)); color:#fff; background:var(--danger) }
+@media(max-width:760px) { .section-actions button { width:40px; height:40px } }

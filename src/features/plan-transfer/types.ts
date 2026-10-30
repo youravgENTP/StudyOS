@@ -27,6 +27,7 @@ export type TransferWorkstream = TransferBase & {
   tasks: TransferTask[]
 }
 export type TransferProject = TransferBase & {
+  archivedAt?: string | null
   workstreams: TransferWorkstream[]
   tasks: TransferTask[]
 }

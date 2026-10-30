@@ -42,9 +42,9 @@ async function nextPosition(table: 'projects' | 'workstreams' | 'sections' | 'ta
 }
 
 export async function listProjects(): Promise<Project[]> {
-  const { data, error } = await dataApi.from('projects').select('id,title,description,category,start_date,due_date,status,is_dday,position,completed_at,created_at').order('position')
+  const { data, error } = await dataApi.from('projects').select('id,title,description,category,start_date,due_date,status,is_dday,position,completed_at,archived_at,created_at').order('position')
   if (error) throw failure('load projects', error)
-  return (data ?? []).map(row => mapBase(row as Record<string, unknown>))
+  return (data ?? []).map(row => { const record = row as Record<string, unknown>; return { ...mapBase(record), archivedAt: record.archived_at ? String(record.archived_at) : null } })
 }
 
 export async function listWorkstreams(): Promise<Workstream[]> {
@@ -88,6 +88,8 @@ export async function createProject(input: ProjectInput) {
 }
 export async function updateProject(id: string, input: ProjectInput) { const invalid = validateProjectInput(input); if (invalid) throw new Error(invalid); const { error } = await dataApi.from('projects').update(values(input)).eq('id', id); if (error) throw failure('update project', error); notifyTasksChanged() }
 export async function deleteProject(id: string) { const { error } = await dataApi.from('projects').delete().eq('id', id); if (error) throw failure('delete project', error); notifyTasksChanged() }
+export async function archiveProject(id: string) { const { error } = await dataApi.from('projects').update({ archived_at: new Date().toISOString() }).eq('id', id); if (error) throw failure('archive project', error); notifyTasksChanged() }
+export async function restoreProject(id: string) { const { error } = await dataApi.from('projects').update({ archived_at: null }).eq('id', id); if (error) throw failure('restore project', error); notifyTasksChanged() }
 
 export async function createWorkstream(input: WorkstreamInput) {
   const invalid = validateWorkstreamInput(input); if (invalid) throw new Error(invalid)
@@ -118,6 +120,25 @@ export async function setEntityStatus(table: 'projects' | 'workstreams' | 'tasks
 export async function setEntityDday(table: 'projects' | 'workstreams' | 'tasks', id: string, isDday: boolean) { const { error } = await dataApi.from(table).update({ is_dday: isDday }).eq('id', id); if (error) throw failure('update D-Day', error); notifyTasksChanged() }
 export async function setTaskCompleted(id: string, completed: boolean) { await setEntityStatus('tasks', id, completed ? 'done' : 'not_started') }
 export async function setTaskDday(id: string, isDday: boolean) { await setEntityDday('tasks', id, isDday) }
+
+function validTaskIds(ids: string[]) {
+  const unique = [...new Set(ids)]
+  if (!unique.length) throw new Error('Select at least one task.')
+  if (unique.length !== ids.length || unique.some(id => !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id))) throw new Error('The selected task list is invalid.')
+  return unique
+}
+
+export async function completeTasks(ids: string[]) {
+  const { error } = await dataApi.rpc('complete_tasks', { task_ids: validTaskIds(ids) })
+  if (error) throw failure('complete tasks', error)
+  notifyTasksChanged()
+}
+
+export async function deleteTasks(ids: string[]) {
+  const { error } = await dataApi.rpc('delete_tasks', { task_ids: validTaskIds(ids) })
+  if (error) throw failure('delete tasks', error)
+  notifyTasksChanged()
+}
 
 export async function reschedulePlanningEntity(table: 'workstreams' | 'tasks', id: string, startDate: string | null, dueDate: string) {
   const { error } = await dataApi.from(table).update({ start_date: startDate, due_date: dueDate }).eq('id', id)

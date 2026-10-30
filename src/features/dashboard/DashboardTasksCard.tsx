@@ -7,8 +7,12 @@ import { ddayLabel } from './date'
 
 export function DashboardTasksCard({ mobile = false }: { mobile?: boolean }) {
   const { projects, workstreams, tasks, loading, error } = useTasks()
-  const open = tasks.filter(task => task.status !== 'done' && task.status !== 'dropped')
-  const pinned = collectDdayEntities(projects, workstreams, tasks).filter(item => item.status !== 'done' && item.status !== 'dropped').slice(0, 5)
+  const activeProjects = projects.filter(project => !project.archivedAt)
+  const activeProjectIds = new Set(activeProjects.map(project => project.id))
+  const activeWorkstreams = workstreams.filter(workstream => activeProjectIds.has(workstream.projectId))
+  const activeTasks = tasks.filter(task => activeProjectIds.has(task.projectId))
+  const open = activeTasks.filter(task => task.status !== 'done' && task.status !== 'dropped')
+  const pinned = collectDdayEntities(activeProjects, activeWorkstreams, activeTasks).filter(item => item.status !== 'done' && item.status !== 'dropped').slice(0, 5)
   const today = new Date().toLocaleDateString('en-CA')
   const actionable = open.filter(task => task.dueDate <= today).sort((a, b) => a.dueDate.localeCompare(b.dueDate)).slice(0, 3)
   const projectPath = (kind: 'project' | 'workstream' | 'task', id: string) => kind === 'project' ? `/tasks/${id}` : `/tasks/${kind === 'workstream' ? workstreams.find(item => item.id === id)?.projectId : tasks.find(item => item.id === id)?.projectId}`

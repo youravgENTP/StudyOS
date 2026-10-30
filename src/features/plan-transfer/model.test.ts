@@ -20,6 +20,16 @@ test('parses a GPT-friendly nested StudyOS plan and counts every level', () => {
   assert.deepEqual(countStudyOsPlan(parsed), { subjects: 1, subcategories: 1, projects: 1, workstreams: 1, sections: 1, tasks: 1, events: 1 })
 })
 
+test('preserves optional project archive state while accepting legacy version 1 files', () => {
+  const legacy = parseStudyOsPlan(payload)
+  assert.equal(Object.hasOwn(legacy.tasks.projects[0], 'archivedAt'), false)
+  const archivedAt = '2026-10-31T01:30:00.000Z'
+  const archived = parseStudyOsPlan({ ...payload, tasks: { projects: [{ ...payload.tasks.projects[0], archivedAt }] } })
+  assert.equal(archived.tasks.projects[0].archivedAt, archivedAt)
+  const restored = parseStudyOsPlan({ ...payload, tasks: { projects: [{ ...payload.tasks.projects[0], archivedAt: null }] } })
+  assert.equal(restored.tasks.projects[0].archivedAt, null)
+})
+
 test('rejects unknown categories and invalid schedule ranges', () => {
   assert.throws(() => parseStudyOsPlan({ ...payload, tasks: { projects: [{ ...payload.tasks.projects[0], category: 'invented' }] } }), /지원하지 않는 카테고리/)
   assert.throws(() => parseStudyOsPlan({ ...payload, schedules: { events: [{ ...payload.schedules.events[0], endTime: '09:00' }] } }), /종료 시점/)
